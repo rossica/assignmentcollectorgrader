@@ -11,8 +11,9 @@ class Course(models.Model):
     
 class Assignment(models.Model):
     def testfileurl(self, filename):
+        import os.path
         extension = os.path.splitext(filename)
-        return "tests/%s/%s%s/%s%s" % (self.course.coursenum, self.course.term, self.course.year, self.name, extension[1])
+        return "tests/%s/%s%s/%s%s" % (self.course.course_num, self.course.term, self.course.year, self.name, extension[1])
     
     course = models.ForeignKey(Course)
     name = models.CharField(max_length=25, help_text='No spaces allowed. Example: lab1-linkedlist.')
@@ -25,9 +26,9 @@ class Assignment(models.Model):
     
 class Submission(models.Model):
     def fileurl(self, filename):
-        import datetime.datetime
+        import os.path
         extension = os.path.splitext(filename)
-        return "submissions/%s/%s%s/%s_%s%s" % (self.assignment.course.coursenum, self.assignment.course.term, self.assignment.course.year, self.last_name, self.first_name, extension[1])
+        return "submissions/%s/%s%s/%s_%s%s" % (self.assignment.course.course_num, self.assignment.course.term, self.assignment.course.year, self.last_name, self.first_name, extension[1])
     
     assignment = models.ForeignKey(Assignment)
     first_name = models.CharField(max_length=25)
