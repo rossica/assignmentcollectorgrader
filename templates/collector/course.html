@@ -6,10 +6,11 @@
     </head>
     
     <body>
-        {% for assn in assignments %}
-            {{assn.name}}  Due:{{assn.due_date}}<br>
-        {% endfor %}
-    
+        <ul>
+            {% for assn in assignments %}
+                <a href="{% url collector.views.view_assignment course_id=assn.course.course_num assn_name=assn.name %}"> <li>{{assn.name}}  <b>Due:{{assn.due_date}}</b> </a>
+            {% endfor %}
+        </ul>
     </body>
     
 

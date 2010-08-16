@@ -6,10 +6,11 @@
 	</head>
 	
 	<body>
-		{% for course in course_list %}
-			{{course.course_num}} {{course.course_title}}<br>
-		{% endfor %}
-	
+        <ul>
+    		{% for course in course_list %}
+    			<a href="{% url collector.views.view_course course_id=course.course_num%}" <li>{{course.course_num}} {{course.course_title}}</a>
+    		{% endfor %}
+    	</ul>
 	</body>
 	
 
