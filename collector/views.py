@@ -16,3 +16,8 @@ def view_assignment(request, course_id, assn_name):
     c = get_object_or_404(Course, course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name) # where the course and assignment name uniquely id the assn
     return render_to_response('collector/assignment.html', {'assignment':assn})
+
+def submit_assignment(request, course_id, assn_name):
+    c = get_object_or_404(Course, course_num=course_id)
+    assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
+    

@@ -1,4 +1,5 @@
 from django.db import models
+from django.forms import ModelForm, Form
 
 
 class Course(models.Model):
@@ -35,3 +36,16 @@ class Submission(models.Model):
     last_name = models.CharField(max_length=25)
     file = models.FileField(upload_to=fileurl)
     submission_time = models.DateTimeField(auto_now_add=True)
+    
+################
+###   Forms  ###
+################
+
+class SubmissionForm(ModelForm):
+    
+    #def clean(self):
+    #    pass
+    
+    class Meta:
+        model = Submission
+        #exclude = ('','')
