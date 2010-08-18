@@ -6,11 +6,27 @@
     </head>
     
     <body>
+        <h2>Assignment Details</h2>
+        
         {{assignment.name}}<br>
-        {{assignment.course}}<br>
+        {{assignment.course.course_num}} - {{assignment.course.course_title}}<br>
         Instructions: {{assignment.instructions}}<br>
         Maximum allowed submissions <b>{{assignment.max_submissions}}</b><br>
-        Due date: <b>{{assignment.due_date}}</b>
+        Due date: <b>{{assignment.due_date}}</b><br>
+    
+        <br>
+        <br>
+        <br>
+        <h3>Assignment Submission Form </h3>
+        <hr>
+        <form enctype="multipart/form-data" action="{% url collector.views.submit_assignment assignment.course.course_num assignment.name %}" method="post">
+        {%if form.errors %}<p>Please correct the error{{form.errors|pluralize}} below and resubmit</p> {%endif%}
+        {{form.as_p}}
+
+        <input type="submit" value="Submit Assignment"/>
+        </form>
+        <hr>
+        
     </body>
     
 </html>

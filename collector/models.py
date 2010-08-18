@@ -2,6 +2,10 @@ from django.db import models
 from django.forms import ModelForm, Form
 
 
+##################
+###   Models   ###
+##################
+
 class Course(models.Model):
     course_num = models.CharField("Course Number", max_length=8, unique=True, help_text='For example: CS260.')
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
@@ -37,9 +41,9 @@ class Submission(models.Model):
     file = models.FileField(upload_to=fileurl)
     submission_time = models.DateTimeField(auto_now_add=True)
     
-################
-###   Forms  ###
-################
+#################
+###   Forms   ###
+#################
 
 class SubmissionForm(ModelForm):
     
@@ -48,4 +52,4 @@ class SubmissionForm(ModelForm):
     
     class Meta:
         model = Submission
-        #exclude = ('','')
+        exclude = ('assignment','submission_time')
