@@ -1,4 +1,4 @@
-from AssignmentCollectorGrader.collector.models import Course, Assignment, Submission
+from assignmentcollectorgrader.collector.models import Course, Assignment, Submission
 from django.contrib import admin
 
 admin.site.register(Course)
