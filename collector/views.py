@@ -23,8 +23,13 @@ def submit_assignment(request, course_id, assn_name):
     c = get_object_or_404(Course, course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
     
+    #if now is later than assn.due_date:
+    #    return and inform the user that submission is closed
+    
     if request.method == 'POST':
-        form = SubmissionForm(request.POST, request.FILES)
+        s = Submission(assignment=assn)
+        form = SubmissionForm(request.POST, request.FILES, instance=s)
+        
         if form.is_valid():
             # either warn the user they have submitted a late assignment
             # or in the validation, check if it is late, and disallow submission
@@ -33,7 +38,7 @@ def submit_assignment(request, course_id, assn_name):
             
             # Once saved, run the tests on the uploaded assignment and save the output as a string
             
-            grader_output = "" # placeholder for grader code
+            grader_output = "Upload Successful!" # placeholder for grader code
             
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm(), 'grader_output':grader_output, })
             # Maybe use a Response redirect to prevent students from refreshing the page and resubmitting the same assignment. 
