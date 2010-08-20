@@ -49,6 +49,8 @@ class SubmissionForm(ModelForm):
     
     #def clean(self):
     #    pass
+    def clean_file(self):
+        self.cleaned_data['file']
     
     class Meta:
         model = Submission

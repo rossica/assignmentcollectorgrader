@@ -15,5 +15,5 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
     
-    (r'^', include('AssignmentCollectorGrader.collector.urls')),
+    (r'^', include('assignmentcollectorgrader.collector.urls')),
 )
