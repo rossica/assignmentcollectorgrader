@@ -10,8 +10,8 @@ def course_index(request):
 
 def view_course(request, course_id):
     course = get_object_or_404(Course, course_num=course_id)
-    assns = course.assignment_set.filter()
-    return render_to_response('collector/course.html', {'assignments':assns})
+    assns = course.assignment_set.all()
+    return render_to_response('collector/course.html', {'assignments':assns, 'course':course})
     
 def view_assignment(request, course_id, assn_name):
     c = get_object_or_404(Course, course_num=course_id)

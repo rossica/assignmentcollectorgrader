@@ -10,7 +10,7 @@ from assignmentcollectorgrader.settings import MEDIA_ROOT
 
 class Course(models.Model):
     def __unicode__(self):
-        return self.course_num
+        return "%s %s %d" % (self.course_num, self.term, self.year)
     course_num = models.CharField("Course Number", max_length=8, unique=True, help_text='For example: CS260.')
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
     description = models.CharField(max_length=255, blank=True, verbose_name='Course Description')
