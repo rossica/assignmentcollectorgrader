@@ -6,7 +6,7 @@ from assignmentcollectorgrader.settings import MEDIA_ROOT
 ##################
 ###   Models   ###
 ##################
-# TODO: Create Generic Assignment and Submssion objects, and sublcass them to make JAR-specific versions
+# TODO: Create Generic Assignment and Submission objects, and subclass them to make JAR-specific versions
 
 class Course(models.Model):
     def __unicode__(self):
@@ -50,6 +50,7 @@ class Submission(models.Model):
     assignment = models.ForeignKey(Assignment)
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
+    # passkey = models.CharField(blank=True)
     file = models.FileField(upload_to=fileurl)
     submission_time = models.DateTimeField(auto_now_add=True)
     

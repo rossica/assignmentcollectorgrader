@@ -4,6 +4,18 @@ from django.http import HttpResponseRedirect, Http404
 
 from assignmentcollectorgrader.collector.models import *
 
+def render_to_csrf(request, template, context):
+    from django.core.context_processors import csrf
+    from django.shortcuts import render_to_response
+    c = {}
+    c.update(csrf(request))
+    try:
+        c.update(context)
+        return render_to_response(template, c)
+    except:
+        pass
+    
+
 def course_index(request):
     list = Course.objects.all();
     return render_to_response('collector/index.html', {'course_list':list})
