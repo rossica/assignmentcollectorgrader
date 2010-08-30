@@ -22,6 +22,7 @@ def course_index(request):
 
 def view_course(request, course_id):
     course = get_object_or_404(Course, course_num=course_id)
+    # TODO: Only show assignments that have started before now()
     assns = course.assignment_set.all()
     return render_to_response('collector/course.html', {'assignments':assns, 'course':course})
     

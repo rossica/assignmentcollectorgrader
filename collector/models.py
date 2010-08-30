@@ -11,9 +11,9 @@ from assignmentcollectorgrader.settings import MEDIA_ROOT
 class Course(models.Model):
     def __unicode__(self):
         return "%s %s %d" % (self.course_num, self.term, self.year)
-    course_num = models.CharField("Course Number", max_length=8, unique=True, help_text='For example: CS260.')
+    course_num = models.CharField("Course Number", max_length=8, help_text='For example: CS260.')
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
-    description = models.CharField(max_length=255, blank=True, verbose_name='Course Description')
+    description = models.TextField(blank=True, verbose_name='Course Description')
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access.')
     year = models.IntegerField(default=2010, help_text='The year this course is offered.')
     term = models.CharField(max_length=6, help_text='The term this course if offered. Valid values are: Fall, Winter, Spring, Summer.')
@@ -29,13 +29,14 @@ class Assignment(models.Model):
         return self.course.__unicode__() + ": " + self.name
     
     course = models.ForeignKey(Course)
-    name = models.CharField(max_length=25, help_text='No spaces allowed. Example: lab1-linkedlist.')
-    instructions = models.CharField(max_length=255, blank=True)
+    name = models.CharField(max_length=25, help_text='No spaces allowed. Must start with a letter. Example: lab1-linkedlist.')
+    instructions = models.TextField(blank=True)
     start_date = models.DateTimeField(blank=True, help_text='Date and time to begin allowing submission of assignments.')
     due_date = models.DateTimeField(blank=True, help_text='Date and time to stop allowing submission of assignments.')
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access.')
     max_submissions = models.IntegerField(default=0, help_text='Maximum allowed submissions per student. 0 for unlimited.')
     test_file = models.FileField(upload_to=testfileurl, blank=True)
+    allow_late = models.BooleanField("Allow Late Submissions", default=True)
     
 class Submission(models.Model):
     # TODO: Rename to JARSubmission
@@ -50,12 +51,13 @@ class Submission(models.Model):
     assignment = models.ForeignKey(Assignment)
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
-    # passkey = models.CharField(blank=True)
+    passkey = models.CharField(max_length=25, blank=True)
     file = models.FileField(upload_to=fileurl)
     submission_time = models.DateTimeField(auto_now_add=True)
     
 #################
 ###   Forms   ###
+# TODO: Create Assignment form that validates the assignment name
 #################
 
 class SubmissionForm(ModelForm):
