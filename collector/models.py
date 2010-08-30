@@ -11,12 +11,18 @@ from assignmentcollectorgrader.settings import MEDIA_ROOT
 class Course(models.Model):
     def __unicode__(self):
         return "%s %s %d" % (self.course_num, self.term, self.year)
+    TERM_CHOICES = (
+    ('fall', 'Fall'),
+    ('winter', 'Winter'),
+    ('spring', 'Spring'),
+    ('summer', 'Summer'),
+    )
     course_num = models.CharField("Course Number", max_length=8, help_text='For example: CS260.')
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
     description = models.TextField(blank=True, verbose_name='Course Description')
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access.')
     year = models.IntegerField(default=2010, help_text='The year this course is offered.')
-    term = models.CharField(max_length=6, help_text='The term this course if offered. Valid values are: Fall, Winter, Spring, Summer.')
+    term = models.CharField(max_length=6, choices=TERM_CHOICES, help_text='The term this course if offered.')
     
 class Assignment(models.Model):
     # TODO: Rename to JARAssignment
