@@ -3,13 +3,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 	<head>
-		<title>Course Index</title>
+		{%if course_index %}
+			<title>Courses</title>
+		{% endif %}
+		{% if specific_term_course_index %}
+			<title>Courses for {{specific_term_course_index.1}} {{specific_term_course_index.0}}</title>
+		{%endif%}
 	</head>
 	
 	<body>
         <ul>
     		{% for course in course_list %}
-    			<a href="{% url collector.views.view_course course_id=course.course_num%}" <li>{{course.course_num}} {{course.course_title}}</a>
+    			<a href="{% url collector.views.view_course course.year course.term course.course_num %}" <li>{{course.course_num}} {{course.course_title}}</a>
     		{% endfor %}
     	</ul>
 	</body>

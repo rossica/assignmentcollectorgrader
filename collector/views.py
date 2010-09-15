@@ -18,30 +18,42 @@ def render_to_csrf(request, template, context):
 
 def course_index(request):
     list = Course.objects.all();
-    return render_to_response('collector/index.html', {'course_list':list})
+    return render_to_response('collector/index.html', {'course_list':list, 'course_index':'a',})
 
-def view_course(request, course_id):
-    course = get_object_or_404(Course, course_num=course_id)
+def specific_term_course_index(request, year, term):
+    list = Course.objects.filter(year=year, term=term)
+    return render_to_response('collector/index.html', {'course_list':list, 'specific_term_course_index':(year,term), })
+
+def view_course(request, year, term, course_id):
+    course = get_object_or_404(Course, year=year, term=term, course_num=course_id)
     # TODO: Only show assignments that have started before now()
     assns = course.assignment_set.all()
     return render_to_response('collector/course.html', {'assignments':assns, 'course':course})
     
-def view_assignment(request, course_id, assn_name):
-    c = get_object_or_404(Course, course_num=course_id)
+def view_assignment(request, year, term, course_id, assn_name):
+    c = get_object_or_404(Course, year=year, term=term, course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name) # where the course and assignment name uniquely id the assn
     form = SubmissionForm()
+    # If there is no passkey, use a different form, or hide the passkey field on the fly.
+    # It's ok if it's blank if the passkey field is blank on the assingment
     return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form})
 
-def submit_assignment(request, course_id, assn_name):
-    c = get_object_or_404(Course, course_num=course_id)
+def submit_assignment(request, year, term, course_id, assn_name):
+    c = get_object_or_404(Course, year=year, term=term, course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
     
-    #if now is later than assn.due_date:
-    #    return and inform the user that submission is closed
+    import datetime
+
     
     if request.method == 'POST':
         s = Submission(assignment=assn)
         form = SubmissionForm(request.POST, request.FILES, instance=s)
+        
+        #if now is later than assn.due_date:
+        #    return and inform the user that submission is closed
+        if (datetime.datetime.now() > assn.due_date) and not assn.allow_late:
+            error_msg = 'Late Submissions are not allowed.'
+            return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'grader_output':error_msg})
         
         if form.is_valid():
             # either warn the user they have submitted a late assignment

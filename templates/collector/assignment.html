@@ -10,7 +10,7 @@
         <h2>Assignment Details</h2>
         
         {{assignment.name}}<br>
-        {{assignment.course.course_num}} - {{assignment.course.course_title}}<br>
+        <a href={% url collector.views.view_course assignment.course.year assignment.course.term assignment.course.course_num %}> {{assignment.course.course_num}} - {{assignment.course.course_title}}</a><br>
         Instructions: {{assignment.instructions}}<br>
         Maximum allowed submissions <b>{% if assignment.max_submissions == 0 %} unlimited {% else %} {{assignment.max_submissions}} {% endif %}</b><br>
         Due date: <b>{{assignment.due_date}}</b><br>
@@ -20,7 +20,7 @@
         <br>
         <h3>Assignment Submission Form </h3>
         <hr>
-        <form enctype="multipart/form-data" action="{% url collector.views.submit_assignment assignment.course.course_num assignment.name %}" method="post">
+        <form enctype="multipart/form-data" action="{% url collector.views.submit_assignment assignment.course.year assignment.course.term assignment.course.course_num assignment.name %}" method="post">
             {% if form.errors %}<p>Please correct the error{{form.errors|pluralize}} below and resubmit</p> {%endif%}
             {{form.as_p}}
 
@@ -28,6 +28,9 @@
         </form>
         <hr>
         <p>{{grader_output}}</p>
+        <br>
+        <br>
+        <a href={% url collector.views.view_course assignment.course.year assignment.course.term assignment.course.course_num %}>Back to the course</a>
     </body>
     
 </html>
