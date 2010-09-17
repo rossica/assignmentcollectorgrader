@@ -42,7 +42,7 @@ class AssignmentAdmin(admin.ModelAdmin):
             'fields':('test_file', )
         })
     )
-    list_display = ('__unicode__', 'course',)
+    list_display = ('__unicode__', 'course', 'due_date', )
     list_filter = ('course', 'due_date')
 
 class SubmissionAdmin(admin.ModelAdmin):

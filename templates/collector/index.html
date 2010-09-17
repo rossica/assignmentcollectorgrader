@@ -7,7 +7,7 @@
 			<title>Courses</title>
 		{% endif %}
 		{% if specific_term_course_index %}
-			<title>Courses for {{specific_term_course_index.1}} {{specific_term_course_index.0}}</title>
+			<title>Courses for {{specific_term_course_index.1|lower|capfirst}} {{specific_term_course_index.0}}</title>
 		{%endif%}
 	</head>
 	

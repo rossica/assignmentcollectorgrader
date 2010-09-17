@@ -7,6 +7,14 @@
     </head>
     
     <body>
+    	<h2>{{course.course_num}}</h2>
+    	<p>
+    		{{course.course_title}} <br/>
+    	 	{{course.term|capfirst}} {{course.year}} <br/> 
+    	 	{{course.description}}<br/>
+    	</p>
+    	<h3>Assignments</h3>
+    	<hr>
         <ul>
             {% for assn in assignments %}
                 <a href="{% url collector.views.view_assignment course.year course.term assn.course.course_num assn.name %}"> <li>{{assn.name}}  <b>Due:{{assn.due_date}}</b> </a>
