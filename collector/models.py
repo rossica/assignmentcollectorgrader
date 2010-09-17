@@ -23,6 +23,7 @@ class Course(models.Model):
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access.')
     year = models.IntegerField(default=2010, help_text='The year this course is offered.')
     term = models.CharField(max_length=6, choices=TERM_CHOICES, help_text='The term this course is offered.')
+    # email = models.EmailField("Email to send grades to")
     
 class Assignment(models.Model):
     # TODO: Rename to JARAssignment

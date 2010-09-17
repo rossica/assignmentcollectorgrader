@@ -68,7 +68,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
             
             # Once saved, run the tests on the uploaded assignment and save the output as a string
             
-            grader_output = "Upload Successful!" + late # placeholder for grader code
+            grader_output = "Upload Successful!\n" + late # placeholder for grader code
             
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm(), 'grader_output':grader_output, })
             # Maybe use a Response redirect to prevent students from refreshing the page and resubmitting the same assignment. 
@@ -80,4 +80,34 @@ def submit_assignment(request, year, term, course_id, assn_name):
     
     else: # HTTP GET instead of POST
         return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm()})
+    
+
+def _grader(assignment, submission):
+    import os.path, tempfile, zipfile, re, shutil
+    # create a temporary directory
+    temp = tempfile.mkdtemp()
+    # extract the student's work into the temporary directory
+    ## create a zipfile object
+    jar = zipfile.ZipFile(submission.file.path)
+    ## Get a list of all files in the archive
+    files = jar.namelist()
+    ## find all "legal" files in the jar/zip (files that don't start with / and don't have .. in them)
+    to_extract = []
+    for i in files:
+        if not re.search("(^/|.*\.\..*)", i):
+            to_extract.append(i)
+    ## extract legal files to the temporary directory
+    jar.extractall(temp, to_extract) 
+    # delete all class files
+    ## find all class files
+    ## delete them
+    # if the grader is a java file, copy it to the temporary dir
+    # if the grader is a JAR, extract the grader into the temporary dir
+    # compile all java files, saving all output
+    ## add the location of JUnit to the classpath, or environment
+    ## actually compile
+    # run the tests, saving output
+    # delete the temporary directory
+    shutil.rmtree(temp)
+    # return the output
         
