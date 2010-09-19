@@ -36,10 +36,15 @@ def view_course(request, year, term, course_id):
 def view_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name) # where the course and assignment name uniquely id the assn
+    import datetime
+    if datetime.datetime.now() < assn.start_date:
+        show = False
+    else:
+        show = True
     form = SubmissionForm()
     # If there is no passkey, use a different form, or hide the passkey field on the fly.
     # It's ok if it's blank if the passkey field is blank on the assingment
-    return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form})
+    return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'show':show})
 
 def submit_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
@@ -50,6 +55,10 @@ def submit_assignment(request, year, term, course_id, assn_name):
     if request.method == 'POST':
         s = Submission(assignment=assn)
         form = SubmissionForm(request.POST, request.FILES, instance=s)
+        
+        if datetime.datetime.now() < assn.start_date:
+            error_msg = 'Submission has not opened for this assignment. Please wait until the assignment is available to submit your code.'
+            return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'grader_output':error_msg})
         
         #if now is later than assn.due_date:
         #    return and inform the user that submission is closed
