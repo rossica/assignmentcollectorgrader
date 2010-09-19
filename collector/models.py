@@ -30,7 +30,7 @@ class Assignment(models.Model):
     def testfileurl(self, filename):
         import os.path
         extension = os.path.splitext(filename)
-        return "tests/%s/%s/%s/%s%s" % (self.course.year, self.course.term, self.course.course_num, self.name, extension[1])
+        return "tests/%s/%s/%s/%s/%s" % (self.course.year, self.course.term, self.course.course_num, self.name, filename)
     
     def __unicode__(self):
         return self.course.__unicode__() + ": " + self.name

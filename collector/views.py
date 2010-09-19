@@ -61,7 +61,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
         if form.is_valid():
             
             if datetime.datetime.now() > assn.due_date:
-                late = "Your submission is past the due date.\n"
+                late = "Your submission is past the due date.\n\n"
             else:
                 late = ""
             # Calculate which submission number this is    
@@ -73,7 +73,9 @@ def submit_assignment(request, year, term, course_id, assn_name):
             
             # Once saved, run the tests on the uploaded assignment and save the output as a string
             
-            grader_output = "Upload Successful!\n" + late # placeholder for grader code
+            grader_output = 'Upload Successful!\n\n' + late # placeholder for grader code
+            
+            grader_output += _grader(assn, submission)
             
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm(), 'grader_output':grader_output, })
             # Maybe use a Response redirect to prevent students from refreshing the page and resubmitting the same assignment. 
@@ -90,7 +92,8 @@ def submit_assignment(request, year, term, course_id, assn_name):
 def _grader(assignment, submission):
     import os.path, os, tempfile, zipfile, re, shutil, subprocess, time
     # create a temporary directory
-    temp = tempfile.mkdtemp()
+    submission_dir, useless = os.path.split(submission.file.path)
+    temp = tempfile.mkdtemp(dir=submission_dir)
     # extract the student's work into the temporary directory
     ## create a zipfile object
     jar = zipfile.ZipFile(submission.file.path)
@@ -99,7 +102,7 @@ def _grader(assignment, submission):
     ## find all "legal" files in the jar/zip (files that don't start with / and don't have .. in them)
     to_extract = []
     for i in files:
-        if not re.search("(^/|.*\.\..*)", i):
+        if not re.search("(^/|.*\.\..*|^META-INF.*)", i):
             to_extract.append(i)
     ## extract legal files to the temporary directory
     jar.extractall(temp, to_extract) 
@@ -109,9 +112,12 @@ def _grader(assignment, submission):
     ## delete them
     for i in class_files:
         if re.search("\.class$", i):
-            os.remove(i)
+            os.remove(os.path.join(temp,i))
     # if the grader is a java file, copy it to the temporary dir
-    shutil.copy2(assignment.test_file.path, temp)
+    # the extra-complicated manner this is accomplished in, is to assure case-sensitivity
+    grader_path, grader_name = os.path.split(assignment.test_file.path)
+    grader_name = os.path.basename(assignment.test_file.name)
+    shutil.copy2(os.path.join(grader_path, grader_name), temp)
     # if the grader is a JAR, extract the grader into the temporary dir
     # compile all java files, saving all output
     output_handle, output_path = tempfile.mkstemp(suffix=".log", dir=temp, text=True)
@@ -121,8 +127,8 @@ def _grader(assignment, submission):
     else:
         os.environ['CLASSPATH'] = JUNIT_ROOT
     ## actually compile
-    args = ['javac',  '*.java'] # '-verbose',
-    javac = subprocess.Popen(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
+    args = ['javac',  '*.java'] # '-verbose', 
+    javac = subprocess.Popen(args=args, shell=True, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
     ## wait until the compilation is done
     javac.wait() # may deadlock. Let's see
     #while javac.poll() is None:
@@ -144,9 +150,9 @@ def _grader(assignment, submission):
     # else, run the tests, saving output
     else: 
     ## Run the tests
-        name, ext = os.path.splitext(os.path.basename(assignment.test_file))
+        name, ext = os.path.splitext(os.path.basename(assignment.test_file.name))
         args = ['java', 'junit.textui.TestRunner', name]
-        java = subprocess.Popen(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
+        java = subprocess.Popen(args=args, shell=True, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
     ## Wait for the tests to complete
         java.wait()
         #while java.poll() is None:
@@ -164,3 +170,8 @@ def _grader(assignment, submission):
         return output
 
         
+        # Save the state information to the output for debugging
+        #environment = ''
+        #for i in os.environ.items():
+        #    environment += ' '.join([i[0], ':', i[1], '\n'])
+        #os.write(output_handle, environment)

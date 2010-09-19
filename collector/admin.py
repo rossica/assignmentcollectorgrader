@@ -54,12 +54,12 @@ class SubmissionAdmin(admin.ModelAdmin):
 #            'fields': ('passkey',)
 #        }),
         ('Submitted File', {
-            'fields':('file', )
-        })
+            'fields':('file', 'grade_log')
+        }), 
     )
-    list_display = ('__unicode__', 'last_name', 'first_name', 'assignment')
-    list_filter = ('assignment', 'submission_time')
-    readonly_fields = ('assignment', 'submission_time', )
+    list_display = ('__unicode__', 'last_name', 'first_name', 'assignment', 'submission_time')
+    list_filter = ('assignment', 'submission_time',)
+    readonly_fields = ('assignment', 'submission_time',)
 
 admin.site.register(Course, CourseAdmin)
 admin.site.register(Assignment, AssignmentAdmin)
