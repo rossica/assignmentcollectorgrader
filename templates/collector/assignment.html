@@ -27,7 +27,7 @@
             <input type="submit" value="Submit Assignment"/>
         </form>
         <hr>
-        <p>{{grader_output}}</p>
+        <p>{{grader_output|linebreaks}}</p>
         <br>
         <br>
         <a href={% url collector.views.view_course assignment.course.year assignment.course.term assignment.course.course_num %}>Back to the course</a>

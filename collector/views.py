@@ -46,7 +46,6 @@ def submit_assignment(request, year, term, course_id, assn_name):
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
     
     import datetime
-
     
     if request.method == 'POST':
         s = Submission(assignment=assn)
@@ -57,24 +56,35 @@ def submit_assignment(request, year, term, course_id, assn_name):
         if (datetime.datetime.now() > assn.due_date) and not assn.allow_late:
             error_msg = 'It is past the due date and late assignments are not allowed. Sorry.'
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'grader_output':error_msg})
+        # else if the assignment is late, but late submissions are allowed
+        elif datetime.datetime.now() > assn.due_date and assn.allow_late:
+            late = "You are turning this assignment in past the due date. But it will be accepted anyway.\n\n"
+        else:
+            late = ""
         
         if form.is_valid():
+
+            # Calculate which submission number this is
+            count = Submission.objects.filter(last_name=form.cleaned_data['last_name'], first_name=form.cleaned_data['first_name'], assignment=assn, ).count()
+            if count > 0:
+                form.instance.submission_number = count + 1
             
-            if datetime.datetime.now() > assn.due_date:
-                late = "Your submission is past the due date.\n\n"
-            else:
-                late = ""
-            # Calculate which submission number this is    
+            # Determine if the maximum number of submissions has been reached.
+            if count >= assn.max_submissions > 0:
+                error_msg = "I'm sorry, but you've reached the maximum number of submissions."
+                return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'grader_output':error_msg})
+                
             
-            # either warn the user they have submitted a late assignment
-            # or in the validation, check if it is late, and disallow submission
-            # then report an error to the user
+            # Save the form to disk/database
             submission = form.save()
             
             # Once saved, run the tests on the uploaded assignment and save the output as a string
             
-            grader_output = 'Upload Successful!\n\n' + late # placeholder for grader code
+            grader_output = 'Upload Successful!\n\n' + late 
+            if assn.max_submissions > 0:
+                grader_output += "You have {0} attempts remaining for this assignment.\n\n".format(assn.max_submissions - count - 1)
             
+            # append the grader output to send it to the user.
             grader_output += _grader(assn, submission)
             
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm(), 'grader_output':grader_output, })
@@ -90,9 +100,9 @@ def submit_assignment(request, year, term, course_id, assn_name):
     
 
 def _grader(assignment, submission):
-    import os.path, os, tempfile, zipfile, re, shutil, subprocess, time
+    import os, re, shutil, subprocess, tempfile, time, zipfile
     # create a temporary directory
-    submission_dir, useless = os.path.split(submission.file.path)
+    submission_dir, file = os.path.split(submission.file.path)
     temp = tempfile.mkdtemp(dir=submission_dir)
     # extract the student's work into the temporary directory
     ## create a zipfile object
@@ -107,10 +117,10 @@ def _grader(assignment, submission):
     ## extract legal files to the temporary directory
     jar.extractall(temp, to_extract) 
     # delete all class files
-    class_files = os.listdir(temp)
+    temp_files = os.listdir(temp)
     ## find all class files
     ## delete them
-    for i in class_files:
+    for i in temp_files:
         if re.search("\.class$", i):
             os.remove(os.path.join(temp,i))
     # if the grader is a java file, copy it to the temporary dir
@@ -118,17 +128,21 @@ def _grader(assignment, submission):
     grader_path, grader_name = os.path.split(assignment.test_file.path)
     grader_name = os.path.basename(assignment.test_file.name)
     shutil.copy2(os.path.join(grader_path, grader_name), temp)
-    # if the grader is a JAR, extract the grader into the temporary dir
+    # TODO: if the grader is a JAR, extract the grader into the temporary dir
     # compile all java files, saving all output
     output_handle, output_path = tempfile.mkstemp(suffix=".log", dir=temp, text=True)
     ## add the location of JUnit to the classpath, or environment
     if 'CLASSPATH' in os.environ:
-        os.environ['CLASSPATH'] = os.environ['CLASSPATH'] + os.pathsep + JUNIT_ROOT
+        os.environ['CLASSPATH'] = os.environ['CLASSPATH'] + os.pathsep + JUNIT_ROOT + os.pathsep + '.' + os.pathsep + os.pathsep
     else:
-        os.environ['CLASSPATH'] = JUNIT_ROOT
+        os.environ['CLASSPATH'] = JUNIT_ROOT + os.pathsep + '.' + os.pathsep + os.pathsep
+    ## Get list of .java files to compile.
+    args = ['javac',  ] #  '-verbose', 
+    for i in temp_files:
+        if re.search("\.java$", i):
+            args.append(i)
     ## actually compile
-    args = ['javac',  '*.java'] # '-verbose', 
-    javac = subprocess.Popen(args=args, shell=True, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
+    javac = subprocess.Popen(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
     ## wait until the compilation is done
     javac.wait() # may deadlock. Let's see
     #while javac.poll() is None:
@@ -137,10 +151,13 @@ def _grader(assignment, submission):
     if javac.returncode > 0:
     ## first move the output file to the submission directory tree
         #submission.grade_log.save(submission.fileurl(os.path.basename(output_path)), File(open(output_path)), save=True)
-        submission.grade_log.save(os.path.basename(output_path), File(open(output_path)), save=True)  
+        file = File(open(output_path))
+        submission.grade_log.save(os.path.basename(output_path), file, save=True)  
     ## read in the output
         output = submission.grade_log.read()
     ## close open files
+        file.close()
+        submission.grade_log.close()
         os.close(output_handle)
         jar.close()
     ## delete the temporary folder
@@ -151,17 +168,20 @@ def _grader(assignment, submission):
     else: 
     ## Run the tests
         name, ext = os.path.splitext(os.path.basename(assignment.test_file.name))
-        args = ['java', 'junit.textui.TestRunner', name]
-        java = subprocess.Popen(args=args, shell=True, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
+        args = ['java', 'junit.textui.TestRunner', name.encode('ascii')]
+        java = subprocess.Popen(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
     ## Wait for the tests to complete
         java.wait()
         #while java.poll() is None:
         #    pass
     ## Save the test output
-        submission.grade_log.save(os.path.basename(output_path), File(open(output_path)), save=True)  
+        file = File(open(output_path))
+        submission.grade_log.save(os.path.basename(output_path), file, save=True)  
     ## read in the output
         output = submission.grade_log.read()
     ## close open files
+        submission.grade_log.close()
+        file.close()
         os.close(output_handle)
         jar.close()
     ## delete the temporary directory

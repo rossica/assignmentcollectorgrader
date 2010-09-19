@@ -58,7 +58,7 @@ class SubmissionAdmin(admin.ModelAdmin):
         }), 
     )
     list_display = ('__unicode__', 'last_name', 'first_name', 'assignment', 'submission_time')
-    list_filter = ('assignment', 'submission_time',)
+    list_filter = ('assignment', 'submission_time', 'last_name',)
     readonly_fields = ('assignment', 'submission_time',)
 
 admin.site.register(Course, CourseAdmin)
