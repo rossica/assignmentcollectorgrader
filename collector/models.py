@@ -23,7 +23,7 @@ class Course(models.Model):
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access.')
     year = models.IntegerField(default=2010, help_text='The year this course is offered.')
     term = models.CharField(max_length=6, choices=TERM_CHOICES, help_text='The term this course is offered.')
-    # email = models.EmailField("Email to send grades to")
+    email = models.EmailField("Email to send grades to", blank=True)
     
 class Assignment(models.Model):
     # TODO: Rename to JARAssignment
@@ -43,18 +43,18 @@ class Assignment(models.Model):
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access.')
     max_submissions = models.IntegerField(default=0, help_text='Maximum allowed submissions per student. 0 for unlimited.')
     test_file = models.FileField(upload_to=testfileurl, blank=True)
-    allow_late = models.BooleanField("Allow Late Submissions", default=True)
+    allow_late = models.BooleanField("Allow Late Submissions", default=False)
     
 class Submission(models.Model):
     # TODO: Rename to JARSubmission
     def fileurl(self, filename):
         import os.path
         extension = os.path.splitext(filename)
-        return "submissions/%s/%s/%s/%s_%s%s" % (self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.last_name, self.first_name, extension[1])
+        return "submissions/%s/%s/%s/%s/%s_%s%s" % (self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.last_name, self.first_name, extension[1])
     
     def __unicode__(self):
-        return self.last_name + " " + self.first_name + ": " + self.assignment.__unicode__() + " " + str(self.id)
-    #    return "%s %s: %s #%d" % (self.last_name, self.first_name, self.assignment.__unicode__(), self.submission_number)
+        #return self.last_name + " " + self.first_name + ": " + self.assignment.__unicode__() + " " + str(self.id)
+        return "%s %s: %s #%d" % (self.last_name, self.first_name, self.assignment.__unicode__(), self.submission_number)
     
     assignment = models.ForeignKey(Assignment)
     first_name = models.CharField(max_length=25)
@@ -62,7 +62,8 @@ class Submission(models.Model):
     passkey = models.CharField(max_length=25, blank=True)
     file = models.FileField(upload_to=fileurl)
     submission_time = models.DateTimeField(auto_now_add=True)
-    # submission_number = models.IntegerField(default=0)
+    submission_number = models.IntegerField(default=0)
+    grade_log = models.FileField(blank=True, upload_to=fileurl)
     
 #################
 ###   Forms   ###
@@ -105,4 +106,4 @@ class SubmissionForm(ModelForm):
     
     class Meta:
         model = Submission
-        exclude = ('assignment','submission_time')
+        exclude = ('assignment','submission_time', 'submission_number', 'grade_log')

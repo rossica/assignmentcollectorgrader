@@ -4,6 +4,7 @@ import os
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 PROJECT_ROOT = os.path.realpath(os.path.dirname(__file__))
+JUNIT_ROOT = PROJECT_ROOT + "/junit482"
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
