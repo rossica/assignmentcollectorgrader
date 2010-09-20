@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect, Http404
 from django.core.files import File
 
 from assignmentcollectorgrader.collector.models import *
-from assignmentcollectorgrader.settings import JUNIT_ROOT, PROJECT_ROOT
+from assignmentcollectorgrader.settings import JUNIT_ROOT
 
 def render_to_csrf(request, template, context):
     from django.core.context_processors import csrf
@@ -38,13 +38,12 @@ def view_assignment(request, year, term, course_id, assn_name):
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name) # where the course and assignment name uniquely id the assn
     import datetime
     if datetime.datetime.now() < assn.start_date:
-        show = False
+        form = None
     else:
-        show = True
-    form = SubmissionForm()
+        form = SubmissionForm()
     # If there is no passkey, use a different form, or hide the passkey field on the fly.
     # It's ok if it's blank if the passkey field is blank on the assingment
-    return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'show':show})
+    return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form,})
 
 def submit_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
@@ -59,13 +58,13 @@ def submit_assignment(request, year, term, course_id, assn_name):
         # If the user is trying to upload a submission before the assignment is available, inform them
         if datetime.datetime.now() < assn.start_date:
             error_msg = 'Submission has not opened for this assignment. Please wait until the assignment is available to submit your code.'
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'grader_output':error_msg})
+            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
         
         #if now is later than assn.due_date:
         #    return and inform the user that submission is closed
         if (datetime.datetime.now() > assn.due_date) and not assn.allow_late:
             error_msg = 'It is past the due date and late assignments are not allowed. Sorry.'
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'grader_output':error_msg})
+            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
         # else if the assignment is late, but late submissions are allowed
         elif datetime.datetime.now() > assn.due_date and assn.allow_late:
             late = "You are turning this assignment in past the due date. But it will be accepted anyway.\n\n"
@@ -82,7 +81,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
             # Determine if the maximum number of submissions has been reached.
             if count >= assn.max_submissions > 0:
                 error_msg = "I'm sorry, but you've reached the maximum number of submissions."
-                return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'grader_output':error_msg})
+                return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
                 
             
             # Save the form to disk/database
@@ -97,7 +96,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
             # append the grader output to send it to the user.
             grader_output += _grader(assn, submission)
             
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm(), 'grader_output':grader_output, })
+            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, })
             # Maybe use a Response redirect to prevent students from refreshing the page and resubmitting the same assignment. 
             # Might not be possible with the grader requirement
             #return HttpResponseRedirect(reverse('sukiyaki.imageboard.views.view_post', args=(tempPost.id,)))
@@ -106,7 +105,10 @@ def submit_assignment(request, year, term, course_id, assn_name):
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form}) 
     
     else: # HTTP GET instead of POST
-        return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm()})
+        if datetime.datetime.now() < assn.start_date:
+            return render_to_response('collector/assignment.html', {'assignment':assn, })
+        else:
+            return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm()})
     
 
 def _grader(assignment, submission):

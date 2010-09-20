@@ -18,7 +18,7 @@
         <br>
         <br>
         <br>
-        {% if show %}
+        {% if form %}
         <h3>Assignment Submission Form </h3>
         <hr>
         <form enctype="multipart/form-data" action="{% url collector.views.submit_assignment assignment.course.year assignment.course.term assignment.course.course_num assignment.name %}" method="post">
