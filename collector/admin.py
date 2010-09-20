@@ -48,7 +48,7 @@ class AssignmentAdmin(admin.ModelAdmin):
 class SubmissionAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Submission Information', {
-            'fields': ('first_name', 'last_name', 'submission_time', 'assignment', )
+            'fields': ('first_name', 'last_name', 'submission_time', 'course', 'assignment', )
         }),
 #        ('Assignment Passkey', {
 #            'fields': ('passkey',)
@@ -58,8 +58,8 @@ class SubmissionAdmin(admin.ModelAdmin):
         }), 
     )
     list_display = ('__unicode__', 'last_name', 'first_name', 'assignment', 'submission_time')
-    list_filter = ('assignment', 'submission_time', 'last_name',)
-    readonly_fields = ('assignment', 'submission_time',)
+    list_filter = ('course', 'assignment', 'submission_time', 'last_name',)
+    readonly_fields = ('assignment', 'course', 'submission_time',)
 
 admin.site.register(Course, CourseAdmin)
 admin.site.register(Assignment, AssignmentAdmin)

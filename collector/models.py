@@ -57,6 +57,7 @@ class Submission(models.Model):
         return "%s %s: %s #%d" % (self.last_name, self.first_name, self.assignment.__unicode__(), self.submission_number)
     
     assignment = models.ForeignKey(Assignment)
+    course = models.ForeignKey(Course)
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
     passkey = models.CharField(max_length=25, blank=True)
@@ -106,4 +107,4 @@ class SubmissionForm(ModelForm):
     
     class Meta:
         model = Submission
-        exclude = ('assignment','submission_time', 'submission_number', 'grade_log')
+        exclude = ('assignment','course', 'submission_time', 'submission_number', 'grade_log')

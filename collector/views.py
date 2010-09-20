@@ -52,7 +52,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
     import datetime
     
     if request.method == 'POST':
-        s = Submission(assignment=assn)
+        s = Submission(assignment=assn, course=c)
         form = SubmissionForm(request.POST, request.FILES, instance=s)
         
         # If the user is trying to upload a submission before the assignment is available, inform them
