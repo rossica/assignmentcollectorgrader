@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect, Http404
 from django.core.files import File
 
 from assignmentcollectorgrader.collector.models import *
-from assignmentcollectorgrader.settings import JUNIT_ROOT
+from assignmentcollectorgrader.settings import JUNIT_ROOT, PROJECT_ROOT
 
 def render_to_csrf(request, template, context):
     from django.core.context_processors import csrf
@@ -56,6 +56,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
         s = Submission(assignment=assn)
         form = SubmissionForm(request.POST, request.FILES, instance=s)
         
+        # If the user is trying to upload a submission before the assignment is available, inform them
         if datetime.datetime.now() < assn.start_date:
             error_msg = 'Submission has not opened for this assignment. Please wait until the assignment is available to submit your code.'
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form, 'grader_output':error_msg})
@@ -111,8 +112,9 @@ def submit_assignment(request, year, term, course_id, assn_name):
 def _grader(assignment, submission):
     import os, re, shutil, subprocess, tempfile, time, zipfile
     # create a temporary directory
-    submission_dir, file = os.path.split(submission.file.path)
-    temp = tempfile.mkdtemp(dir=submission_dir)
+    #submission_dir, file = os.path.split(submission.file.path)
+    #temp = tempfile.mkdtemp(dir=submission_dir)
+    temp = tempfile.mkdtemp()
     # extract the student's work into the temporary directory
     ## create a zipfile object
     jar = zipfile.ZipFile(submission.file.path)
@@ -121,16 +123,15 @@ def _grader(assignment, submission):
     ## find all "legal" files in the jar/zip (files that don't start with / and don't have .. in them)
     to_extract = []
     for i in files:
-        if not re.search("(^/|.*\.\..*|^META-INF.*)", i):
+        if not re.search("(^/|.*\.\..*|^META-INF)", i):
             to_extract.append(i)
     ## extract legal files to the temporary directory
     jar.extractall(temp, to_extract) 
-    # delete all class files
-    temp_files = os.listdir(temp)
+    # delete all class files 
+    for i in os.listdir(temp):
     ## find all class files
-    ## delete them
-    for i in temp_files:
         if re.search("\.class$", i):
+    ## delete them
             os.remove(os.path.join(temp,i))
     # if the grader is a java file, copy it to the temporary dir
     # the extra-complicated manner this is accomplished in, is to assure case-sensitivity
@@ -142,24 +143,21 @@ def _grader(assignment, submission):
     output_handle, output_path = tempfile.mkstemp(suffix=".log", dir=temp, text=True)
     ## add the location of JUnit to the classpath, or environment
     if 'CLASSPATH' in os.environ:
-        os.environ['CLASSPATH'] = os.environ['CLASSPATH'] + os.pathsep + JUNIT_ROOT + os.pathsep + '.' + os.pathsep + os.pathsep
+        if JUNIT_ROOT not in os.environ['CLASSPATH']:
+            os.environ['CLASSPATH'] = os.environ['CLASSPATH'] + os.pathsep + '.' + os.pathsep + JUNIT_ROOT # os.pathsep + 
     else:
-        os.environ['CLASSPATH'] = JUNIT_ROOT + os.pathsep + '.' + os.pathsep + os.pathsep
+        os.environ['CLASSPATH'] =  '.' + os.pathsep + JUNIT_ROOT # os.pathsep + os.pathsep +
     ## Get list of .java files to compile.
     args = ['javac',  ] #  '-verbose', 
-    for i in temp_files:
+    ## Append the java files to the list of args
+    for i in os.listdir(temp):
         if re.search("\.java$", i):
             args.append(i)
     ## actually compile
-    javac = subprocess.Popen(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
-    ## wait until the compilation is done
-    javac.wait() # may deadlock. Let's see
-    #while javac.poll() is None:
-    #    time.sleep(.25) # this is a work-around to avoid using javac.wait() because of the risk of deadlocking the subprocess
+    javac = subprocess.call(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
     # If compilation is unsuccessful, return the program output
-    if javac.returncode > 0:
-    ## first move the output file to the submission directory tree
-        #submission.grade_log.save(submission.fileurl(os.path.basename(output_path)), File(open(output_path)), save=True)
+    if javac > 0:
+    ## first save the output file to the submission
         file = File(open(output_path))
         submission.grade_log.save(os.path.basename(output_path), file, save=True)  
     ## read in the output
@@ -177,13 +175,9 @@ def _grader(assignment, submission):
     else: 
     ## Run the tests
         name, ext = os.path.splitext(os.path.basename(assignment.test_file.name))
-        args = ['java', 'junit.textui.TestRunner', name.encode('ascii')]
-        java = subprocess.Popen(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
-    ## Wait for the tests to complete
-        java.wait()
-        #while java.poll() is None:
-        #    pass
-    ## Save the test output
+        args2 = ['java', 'junit.textui.TestRunner', name]
+        java = subprocess.call(args=args2, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
+    ## Save the test output to the submission
         file = File(open(output_path))
         submission.grade_log.save(os.path.basename(output_path), file, save=True)  
     ## read in the output
@@ -197,10 +191,3 @@ def _grader(assignment, submission):
         shutil.rmtree(temp)
     ## return the output
         return output
-
-        
-        # Save the state information to the output for debugging
-        #environment = ''
-        #for i in os.environ.items():
-        #    environment += ' '.join([i[0], ':', i[1], '\n'])
-        #os.write(output_handle, environment)
