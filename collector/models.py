@@ -26,12 +26,11 @@ class Course(models.Model):
     term = models.CharField(max_length=6, choices=TERM_CHOICES, help_text='The term this course is offered.')
     email = models.EmailField("Email to send grades to", blank=True)
     
-class Assignment(models.Model):
-    # TODO: Rename to JARAssignment
+class GenericAssignment(models.Model):
     def testfileurl(self, filename):
         import os.path
         extension = os.path.splitext(filename)
-        return "tests/%s/%s/%s/%s/%s" % (self.course.year, self.course.term, self.course.course_num, self.name, filename)
+        return "tests/{0}/{1}/{2}/{3}/{4}".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
     
     def __unicode__(self):
         return self.course.__unicode__() + ": " + self.name
@@ -43,8 +42,14 @@ class Assignment(models.Model):
     due_date = models.DateTimeField(blank=True, help_text='Date and time to stop allowing submission of assignments.')
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access. Overrides any specified Course passkey.')
     max_submissions = models.IntegerField(default=0, help_text='Maximum allowed submissions per student. 0 for unlimited.')
-    test_file = models.FileField(upload_to=testfileurl, blank=True)
     allow_late = models.BooleanField("Allow Late Submissions", default=False)
+    
+    class Meta:
+        abstract = True
+
+class Assignment(GenericAssignment):
+    # TODO: Rename to JARAssignment
+    test_file = models.FileField(upload_to=GenericAssignment.testfileurl, blank=True)
     
 class Submission(models.Model):
     # TODO: Rename to JARSubmission
