@@ -1,6 +1,5 @@
 from django.db import models
 from django import forms
-#from django.forms import ModelForm, Form, ValidationError
 from assignmentcollectorgrader.settings import MEDIA_ROOT
 
 
@@ -33,7 +32,7 @@ class GenericAssignment(models.Model):
         return "tests/{0}/{1}/{2}/{3}/{4}".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
     
     def __unicode__(self):
-        return self.course.__unicode__() + ": " + self.name
+        return "{0}: {1}".format(self.course.__unicode__(), self.name)
     
     course = models.ForeignKey(Course)
     name = models.CharField(max_length=25, help_text='No spaces allowed. Must start with a letter. Example: lab1-linkedlist.')
@@ -50,13 +49,12 @@ class GenericAssignment(models.Model):
 class Assignment(GenericAssignment):
     # TODO: Rename to JARAssignment
     test_file = models.FileField(upload_to=GenericAssignment.testfileurl, blank=True)
-    
-class Submission(models.Model):
-    # TODO: Rename to JARSubmission
+
+class GenericSubmission(models.Model):
     def fileurl(self, filename):
         import os.path
         extension = os.path.splitext(filename)
-        return "submissions/%s/%s/%s/%s/%s_%s_%d%s" % (self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.last_name, self.first_name, self.submission_number, extension[1])
+        return "submissions/{0}/{1}/{2}/{3}/{4}_{5}_{6}{7}".format(self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.last_name, self.first_name, self.submission_number, extension[1])
     
     def __unicode__(self):
         return "{0} {1}: {2} #{3}".format(self.last_name, self.first_name, self.assignment.__unicode__(), self.submission_number)
@@ -65,11 +63,17 @@ class Submission(models.Model):
     course = models.ForeignKey(Course)
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
-    passkey = models.CharField(max_length=25, blank=True)
-    file = models.FileField(upload_to=fileurl)
     submission_time = models.DateTimeField(auto_now_add=True)
     submission_number = models.IntegerField(default=1)
-    grade_log = models.FileField(blank=True, upload_to=fileurl)
+    
+    class Meta:
+        abstract = True
+        
+class Submission(GenericSubmission):
+    # TODO: Rename to JARSubmission
+    file = models.FileField(upload_to=GenericSubmission.fileurl)
+    grade_log = models.FileField(blank=True, upload_to=GenericSubmission.fileurl)
+    grade = models.CharField(max_length=100, blank=True)
     
 #################
 ###   Forms   ###
@@ -115,9 +119,10 @@ class SubmissionFormP(SubmissionForm):
         # If the passkey field is specified
         if 'passkey' in self.cleaned_data:
             # First test if the passkey is the assignment passkey
-            if self.cleaned_data['passkey'] != self.instance.assignment.passkey:
+            if (self.cleaned_data['passkey'] != self.instance.assignment.passkey) and (self.instance.assignment.passkey != ''):
                 # Then test if the passkey is the course passkey
-                if self.cleaned_data['passkey'] != self.instance.course.passkey:
+                if (self.cleaned_data['passkey'] != self.instance.course.passkey) and (self.instance.course.passkey != ''):
+                    # If niether course nor assignment passkey, and neither are blank, display an error
                     self._errors["passkey"] = self.error_class(["The passkey is incorrect."])
         return self.cleaned_data
     
