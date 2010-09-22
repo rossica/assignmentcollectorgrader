@@ -3,6 +3,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponseRedirect, Http404
 
 from django.core.files import File
+from django.core.urlresolvers import reverse
 
 from assignmentcollectorgrader.collector.models import *
 from assignmentcollectorgrader.settings import JUNIT_ROOT
@@ -37,12 +38,15 @@ def view_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name) # where the course and assignment name uniquely id the assn
     import datetime
+
     if datetime.datetime.now() < assn.start_date:
         form = None
     else:
-        form = SubmissionForm()
-    # If there is no passkey, use a different form, or hide the passkey field on the fly.
-    # It's ok if it's blank if the passkey field is blank on the assingment
+        # If there is no passkey, use a different form
+        if assn.passkey == '' and c.passkey == '':
+            form = SubmissionForm()
+        else:
+            form = SubmissionFormP()
     return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form,})
 
 def submit_assignment(request, year, term, course_id, assn_name):
@@ -53,7 +57,11 @@ def submit_assignment(request, year, term, course_id, assn_name):
     
     if request.method == 'POST':
         s = Submission(assignment=assn, course=c)
-        form = SubmissionForm(request.POST, request.FILES, instance=s)
+        # Choose the right kind of form to perform validation
+        if assn.passkey == '' and c.passkey == '':
+            form = SubmissionForm(request.POST, request.FILES, instance=s)
+        else:
+            form = SubmissionFormP(request.POST, request.FILES, instance=s)
         
         # If the user is trying to upload a submission before the assignment is available, inform them
         if datetime.datetime.now() < assn.start_date:
@@ -97,18 +105,16 @@ def submit_assignment(request, year, term, course_id, assn_name):
             grader_output += _grader(assn, submission)
             
             return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, })
-            # Maybe use a Response redirect to prevent students from refreshing the page and resubmitting the same assignment. 
-            # Might not be possible with the grader requirement
-            #return HttpResponseRedirect(reverse('sukiyaki.imageboard.views.view_post', args=(tempPost.id,)))
         
         else: # Invalid form
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form}) 
     
     else: # HTTP GET instead of POST
-        if datetime.datetime.now() < assn.start_date:
-            return render_to_response('collector/assignment.html', {'assignment':assn, })
-        else:
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm()})
+        return HttpResponseRedirect(reverse('assignmentcollectorgrader.collector.views.view_assignment', args=(c.year, c.term, c.course_num, assn.name,)))
+        #if datetime.datetime.now() < assn.start_date:
+        #    return render_to_response('collector/assignment.html', {'assignment':assn, })
+        #else:
+        #    return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm()})
     
 
 def _grader(assignment, submission):
