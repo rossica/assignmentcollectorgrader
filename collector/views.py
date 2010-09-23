@@ -74,7 +74,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
             error_msg = 'It is past the due date and late assignments are not allowed. Sorry.'
             return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
         # else if the assignment is late, but late submissions are allowed
-        elif datetime.datetime.now() > assn.due_date and assn.allow_late:
+        elif (datetime.datetime.now() > assn.due_date) and assn.allow_late:
             late = "You are turning this assignment in past the due date. But it will be accepted anyway.\n\n"
         else:
             late = ""
@@ -97,12 +97,14 @@ def submit_assignment(request, year, term, course_id, assn_name):
             
             # Once saved, run the tests on the uploaded assignment and save the output as a string
             
-            grader_output = 'Upload Successful!\n\n' + late 
+            grader_output = late 
             if assn.max_submissions > 0:
                 grader_output += "You have {0} attempts remaining for this assignment.\n\n".format(assn.max_submissions - count - 1)
             
-            # append the grader output to send it to the user.
-            grader_output += _grader(assn, submission)
+            # If this assignment contains a test file
+            if assn.test_file:
+                # append the grader output to send it to the user.
+                grader_output += _grader(assn, submission)
             
             return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, })
         
@@ -170,6 +172,12 @@ def _grader(assignment, submission):
         submission.grade_log.save(os.path.basename(output_path), file, save=True)  
     ## read in the output
         output = submission.grade_log.read()
+    ## Extract the grade information from the output
+        #match = re.search(r'([1]) error|(\d+) errors', output)
+        match = re.search(r'^(\d+) error', output, re.M)
+    ## Save to the submission
+        submission.grade = "0 ({0} compiler errors)".format(match.group(1))
+        submission.save()
     ## close open files
         file.close()
         submission.grade_log.close()
@@ -190,6 +198,16 @@ def _grader(assignment, submission):
         submission.grade_log.save(os.path.basename(output_path), file, save=True)  
     ## read in the output
         output = submission.grade_log.read()
+    ## Extract the grade information from the output
+        regex = r"^Tests run:\s+(?P<total>\d+),\s+Failures:\s+(?P<failures>\d+),\s+Errors:\s+(?P<errors>\d+)$|^OK\s+[(](?P<successful>\d+)\s+tests[)]$"
+        match = re.search(regex, output, re.M)
+    ## Save to the submission
+        results = match.groupdict()
+        if 'successful' in results:
+            submission.grade = "{0}/{0}".format(results['successful'])
+        else:
+            submission.grade = "{0}/{1}".format(int(results['total']) - (int(results['failures']) + int(results['errors'])), results['total'])
+        submission.save()
     ## close open files
         submission.grade_log.close()
         file.close()

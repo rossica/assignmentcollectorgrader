@@ -37,8 +37,8 @@ class GenericAssignment(models.Model):
     course = models.ForeignKey(Course)
     name = models.CharField(max_length=25, help_text='No spaces allowed. Must start with a letter. Example: lab1-linkedlist.')
     instructions = models.TextField(blank=True)
-    start_date = models.DateTimeField(blank=True, help_text='Date and time to begin allowing submission of assignments.')
-    due_date = models.DateTimeField(blank=True, help_text='Date and time to stop allowing submission of assignments.')
+    start_date = models.DateTimeField(help_text='Date and time to begin allowing submission of assignments.')
+    due_date = models.DateTimeField(help_text='Date and time to stop allowing submission of assignments.')
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access. Overrides any specified Course passkey.')
     max_submissions = models.IntegerField(default=0, help_text='Maximum allowed submissions per student. 0 for unlimited.')
     allow_late = models.BooleanField("Allow Late Submissions", default=False)
@@ -118,11 +118,12 @@ class SubmissionFormP(SubmissionForm):
     def clean(self):
         # If the passkey field is specified
         if 'passkey' in self.cleaned_data:
+            p = self.cleaned_data['passkey']
             # First test if the passkey is the assignment passkey
-            if (self.cleaned_data['passkey'] != self.instance.assignment.passkey) and (self.instance.assignment.passkey != ''):
+            if (p != self.instance.assignment.passkey):
                 # Then test if the passkey is the course passkey
-                if (self.cleaned_data['passkey'] != self.instance.course.passkey) and (self.instance.course.passkey != ''):
-                    # If niether course nor assignment passkey, and neither are blank, display an error
+                if (p != self.instance.course.passkey):
+                    # If niether course nor assignment passkey, display an error
                     self._errors["passkey"] = self.error_class(["The passkey is incorrect."])
         return self.cleaned_data
     
