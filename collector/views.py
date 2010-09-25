@@ -30,7 +30,7 @@ def specific_term_course_index(request, year, term):
 
 def view_course(request, year, term, course_id):
     course = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
-    # TODO: Only show assignments that have started before now()
+    # TODO: Only show assignments that have started before now() -- FIXED: can't submit to assignments that start before now
     assns = course.assignment_set.all()
     return render_to_response('collector/course.html', {'assignments':assns, 'course':course})
     
@@ -75,7 +75,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
             return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
         # else if the assignment is late, but late submissions are allowed
         elif (datetime.datetime.now() > assn.due_date) and assn.allow_late:
-            late = "You are turning this assignment in past the due date. But it will be accepted anyway.\n\n"
+            late = "You are turning in this assignment past the due date. But it will be accepted anyway.\n\n"
         else:
             late = ""
         
@@ -90,7 +90,6 @@ def submit_assignment(request, year, term, course_id, assn_name):
             if count >= assn.max_submissions > 0:
                 error_msg = "I'm sorry, but you've reached the maximum number of submissions."
                 return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
-                
             
             # Save the form to disk/database
             submission = form.save()
@@ -133,7 +132,7 @@ def _grader(assignment, submission):
     ## find all "legal" files in the jar/zip (files that don't start with / and don't have .. in them)
     to_extract = []
     for i in files:
-        if not re.search("(^/|.*\.\..*|^META-INF)", i):
+        if not re.search("(^/|/?\.\./|^META-INF)", i):
             to_extract.append(i)
     ## extract legal files to the temporary directory
     jar.extractall(temp, to_extract) 
@@ -160,9 +159,14 @@ def _grader(assignment, submission):
     ## Get list of .java files to compile.
     args = ['javac',  ] #  '-verbose', 
     ## Append the java files to the list of args
-    for i in os.listdir(temp):
+    args.append(grader_name)
+    for i in to_extract:
         if re.search("\.java$", i):
             args.append(i)
+    ## Alternate way of doing it
+    #for i in os.listdir(temp):
+    #    if re.search("\.java$", i):
+    #        args.append(i)
     ## actually compile
     javac = subprocess.call(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
     # If compilation is unsuccessful, return the program output
@@ -174,7 +178,7 @@ def _grader(assignment, submission):
         output = submission.grade_log.read()
     ## Extract the grade information from the output
         #match = re.search(r'([1]) error|(\d+) errors', output)
-        match = re.search(r'^(\d+) error', output, re.M)
+        match = re.search(r'^(\d+)\s+error', output, re.M)
     ## Save to the submission
         submission.grade = "0 ({0} compiler errors)".format(match.group(1))
         submission.save()
@@ -199,14 +203,27 @@ def _grader(assignment, submission):
     ## read in the output
         output = submission.grade_log.read()
     ## Extract the grade information from the output
-        regex = r"^Tests run:\s+(?P<total>\d+),\s+Failures:\s+(?P<failures>\d+),\s+Errors:\s+(?P<errors>\d+)$|^OK\s+[(](?P<successful>\d+)\s+tests[)]$"
-        match = re.search(regex, output, re.M)
-    ## Save to the submission
-        results = match.groupdict()
-        if 'successful' in results:
-            submission.grade = "{0}/{0}".format(results['successful'])
+    ### If java returns with an error code
+        if java > 0:
+    ### First check for a JUnit failure
+            regex = r"^Tests\s+run:\s+(?P<total>\d+?),\s+Failures:\s+(?P<failures>\d+?),\s+Errors:\s+(?P<errors>\d+?)$"
+            match = re.search(regex, output, re.M)
+            if match:
+                results = match.groupdict()
+                submission.grade = "{0}/{1}".format(int(results['total']) - (int(results['failures']) + int(results['errors'])), results['total'])
+    ### Otherwise, check for an Exception
+            else:
+                regex = "^Exception\s+in\s+thread\s+\"main\"\s+(?P<exception>[a-zA-Z0-9._]+?):\s+(?P<class>[a-zA-Z0-9._]+?)$"
+                match = re.search(regex, output, re.M)
+                results = match.groupdict()
+                submission.grade = "0 (Exception in thread \"main\" {0}: {1})".format(results['exception'], results['class'])
+    ### If java runs just fine
         else:
-            submission.grade = "{0}/{1}".format(int(results['total']) - (int(results['failures']) + int(results['errors'])), results['total'])
+            regex = r"^OK\s+[(](?P<successful>\d+?)\s+tests[)]$"
+            match = re.search(regex, output, re.M)
+            results = match.groupdict()
+            submission.grade = "{0}/{0}".format(results['successful'])
+    ## Save to the submission    
         submission.save()
     ## close open files
         submission.grade_log.close()

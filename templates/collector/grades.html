@@ -1,0 +1,32 @@
+<html>
+	<head>
+		<title>Grades</title>
+	</head>
+	<body>
+	<!-- for each assignment, show the assignment name, course name, warnings (if any) then student grades. -->
+		{% for assn, stu, warning in grades %}
+			<h3>{{assn.course.course_num}}: {{assn.name}}</h3>
+			<p> Due: {{assn.due_date}}</p>
+			{% if warning %}
+				<h4>
+					<font color=red>{{warning}}</font><br>
+				</h4>
+			{% endif %}
+			<table border=1 cellpadding=0>
+			<tr>
+				<th>Last Name</th>
+				<th>First Name</th>
+				<th>Grade</th>
+			</tr>
+			{% for g in stu %}
+				<tr>
+					<td>{{g.last_name}}</td>
+					<td>{{g.first_name}}</td>
+					<td>{{g.grade}}</td>
+				</tr>
+			{% endfor %}
+			</table>
+			<hr>
+		{% endfor %}
+	</body>
+</html>
