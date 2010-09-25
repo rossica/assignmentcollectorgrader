@@ -46,6 +46,7 @@ class AssignmentAdmin(admin.ModelAdmin):
     )
     list_display = ('__unicode__', 'course', 'due_date', )
     list_filter = ('course', 'due_date')
+    search_fields = ('name', )
     actions = ['display_grades']
     def display_grades(self, request, queryset):
         from django.shortcuts import render_to_response
@@ -57,7 +58,7 @@ class AssignmentAdmin(admin.ModelAdmin):
             if assn.start_date < datetime.datetime.now():
                 warning = None
                 # Get all names submitted to this assignment
-                names = assn.submission_set.filter(assignment=assn).values_list('last_name', 'first_name').distinct()
+                names = assn.submission_set.values_list('last_name', 'first_name').distinct()
                 # Get the newest submission for each name and store it in a list
                 submissions = []
                 for name in names:
@@ -68,7 +69,7 @@ class AssignmentAdmin(admin.ModelAdmin):
                 # Add the assignment, the latest unique submissions, and warnings (if any) to the output
                 grades.append([assn, submissions, warning])
         return render_to_response('collector/grades.html', {'grades':grades,})
-    display_grades.short_description = "Display grades."
+    display_grades.short_description = "Display grades"
     
 
 

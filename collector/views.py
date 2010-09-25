@@ -71,11 +71,11 @@ def submit_assignment(request, year, term, course_id, assn_name):
         #if now is later than assn.due_date:
         #    return and inform the user that submission is closed
         if (datetime.datetime.now() > assn.due_date) and not assn.allow_late:
-            error_msg = 'It is past the due date and late assignments are not allowed. Sorry.'
+            error_msg = 'It is past the due date and late assignments are not accepted. Sorry. :('
             return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
         # else if the assignment is late, but late submissions are allowed
         elif (datetime.datetime.now() > assn.due_date) and assn.allow_late:
-            late = "You are turning in this assignment past the due date. But it will be accepted anyway.\n\n"
+            late = "You are turning in this assignment past the due date. But it will be accepted anyway. :)\n\n"
         else:
             late = ""
         
