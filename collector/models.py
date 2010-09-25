@@ -17,6 +17,12 @@ class Course(models.Model):
     ('spring', 'Spring'),
     ('summer', 'Summer'),
     )
+    @models.permalink
+    def get_absolute_url(self):
+        return ('view_course', (), {
+                'year': self.year,
+                'term':self.term,
+                'course_id':self.course_num,})
     course_num = models.CharField("Course Number", max_length=8, help_text='For example: CS260.')
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
     description = models.TextField(blank=True, verbose_name='Course Description')
@@ -32,7 +38,8 @@ class GenericAssignment(models.Model):
         return "tests/{0}/{1}/{2}/{3}/{4}".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
     
     def __unicode__(self):
-        return "{0}: {1}".format(self.course.__unicode__(), self.name)
+        #return "{0}: {1}".format(self.course.__unicode__(), self.name)
+        return self.name
     
     course = models.ForeignKey(Course)
     name = models.CharField(max_length=25, help_text='No spaces allowed. Must start with a letter. Example: lab1-linkedlist.')
@@ -48,6 +55,13 @@ class GenericAssignment(models.Model):
 
 class Assignment(GenericAssignment):
     # TODO: Rename to JARAssignment
+    @models.permalink
+    def get_absolute_url(self):
+        return ('view_assignment', (), {
+                'year': self.course.year,
+                'term':self.course.term,
+                'course_id':self.course.course_num,
+                'assn_name':self.name})
     test_file = models.FileField(upload_to=GenericAssignment.testfileurl, blank=True)
 
 class GenericSubmission(models.Model):
@@ -79,6 +93,28 @@ class Submission(GenericSubmission):
 ###   Forms   ###
 # TODO: Create Assignment form that validates the assignment name
 #################
+
+class CourseAdminForm(forms.ModelForm):
+    class Meta:
+        model = Course
+    
+    def clean_course_num(self):
+        import re
+        cn = self.cleaned_data['course_num']
+        if not re.match(r'^[A-Z]{1,4}\d{3}[CDW]?$', cn.upper()):
+            raise forms.ValidationError("Must begin with 1-4 letters, followed by 3 numbers, possibly followed by C,D or W.")
+        return cn.upper()
+
+class AssignmentAdminForm(forms.ModelForm):
+    class Meta:
+        model = Assignment
+    
+    def clean_name(self):
+        import re
+        name = self.cleaned_data['name']
+        if not re.match(r'^[a-zA-Z][\w\-]{,24}$', name):
+            raise forms.ValidationError("Name must begin with a letter, and only contain letters, numbers, _ and -")
+        return name
 
 class SubmissionForm(forms.ModelForm):
     # TODO: Create a JAR-specific JAR submission form, and a generic Submission form

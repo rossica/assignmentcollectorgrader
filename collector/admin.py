@@ -1,9 +1,11 @@
-from assignmentcollectorgrader.collector.models import Course, Assignment, Submission
+from assignmentcollectorgrader.collector.models import Course, CourseAdminForm, Assignment, AssignmentAdminForm, Submission
 from django.contrib import admin
+from django import forms
 
 
 
 class CourseAdmin(admin.ModelAdmin):
+    form = CourseAdminForm
     fieldsets = (
         ('Course Information', {
             'fields': ('course_num', 'course_title',)
@@ -25,7 +27,9 @@ class CourseAdmin(admin.ModelAdmin):
     search_fields = ('^course_num', )
 
 
+
 class AssignmentAdmin(admin.ModelAdmin):
+    form = AssignmentAdminForm
     fieldsets = (
         ('Assignment Information', {
             'fields': ('course', 'name', 'start_date', 'due_date', )
@@ -85,7 +89,7 @@ class SubmissionAdmin(admin.ModelAdmin):
             'fields':('grade',)
         }),
     )
-    list_display = ('__unicode__', 'last_name', 'first_name', 'assignment', 'submission_time', 'grade')
+    list_display = ('__unicode__', 'last_name', 'first_name', 'course', 'assignment', 'submission_time', 'grade')
     list_filter = ('course', 'assignment', 'submission_time', 'last_name',)
     readonly_fields = ('assignment', 'course', 'submission_time', 'grade',)
 
