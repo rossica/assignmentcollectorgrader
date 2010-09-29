@@ -30,9 +30,11 @@ def specific_term_course_index(request, year, term):
 
 def view_course(request, year, term, course_id):
     course = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
+    import datetime
     # TODO: Only show assignments that have started before now() -- FIXED: can't submit to assignments that start before now
-    assns = course.assignment_set.all()
-    return render_to_response('collector/course.html', {'assignments':assns, 'course':course})
+    assns = course.assignment_set.order_by('due_date').filter(due_date__gte=datetime.datetime.now())
+    late = course.assignment_set.order_by('due_date').filter(due_date__lt=datetime.datetime.now())
+    return render_to_response('collector/course.html', {'assignments':assns, 'late':late, 'course':course})
     
 def view_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
@@ -41,6 +43,8 @@ def view_assignment(request, year, term, course_id, assn_name):
 
     if datetime.datetime.now() < assn.start_date:
         form = None
+    elif (not assn.allow_late) and datetime.datetime.now() > assn.due_date:
+        form = None
     else:
         # If there is no passkey, use a different form
         if assn.passkey == '' and c.passkey == '':
@@ -48,6 +52,15 @@ def view_assignment(request, year, term, course_id, assn_name):
         else:
             form = SubmissionFormP()
     return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form,})
+
+def view_submission(request, year, term, course_id, assn_name, sub_id):
+    c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
+    assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
+    sub = get_object_or_404(Submission, id=sub_id)
+    
+    grader_output = sub.grade_log.read()
+    
+    return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':sub})
 
 def submit_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
@@ -105,7 +118,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
                 # append the grader output to send it to the user.
                 grader_output += _grader(assn, submission)
             
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, })
+            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':submission})
         
         else: # Invalid form
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form}) 

@@ -3,7 +3,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
     <head>
-    	<title>{{assignment.course.course_num}} {{assignment.name}} </title>
+    	{% if submission %}
+    		<title>{{submission.first_name|capfirst}} {{submission.last_name|capfirst}}&#39;s {{assignment.name}} Submission Details</title>
+    	{% else %}
+    		<title>{{assignment.course.course_num}} {{assignment.name}} </title>
+    	{% endif%}
     </head>
     
     <body>
@@ -14,23 +18,39 @@
         Instructions: {{assignment.instructions}}<br>
         Maximum allowed submissions <b>{% if assignment.max_submissions == 0 %} unlimited {% else %} {{assignment.max_submissions}} {% endif %}</b><br>
         Due date: <b>{{assignment.due_date}}</b><br>
-    
-        <br>
-        <br>
-        <br>
+    	<br>
+        
         {% if form %}
-        <h3>Assignment Submission Form </h3>
-        <hr>
-        <form enctype="multipart/form-data" action="{% url collector.views.submit_assignment assignment.course.year assignment.course.term assignment.course.course_num assignment.name %}" method="post">
-            {% if form.errors %}<p>Please correct the error{{form.errors|pluralize}} below and resubmit</p> {% endif %}
+	        <br>
+	        <br>
+	        <h3>Assignment Submission Form </h3>
+	        <hr>
+        	<form enctype="multipart/form-data" action="{% url collector.views.submit_assignment assignment.course.year assignment.course.term assignment.course.course_num assignment.name %}" method="post">
+            	{% if form.errors %}<p>Please correct the error{{form.errors|pluralize}} below and resubmit</p> {% endif %}
             
-            {{form.as_p}}
+            	{{form.as_p}}
 
-            <input type="submit" value="Submit Assignment"/>
-        </form>
+            	<input type="submit" value="Submit Assignment"/>
+        	</form>
+        {% endif %}
+        {% if submission %}
+        	<hr>
+        	<h2>Submission Details</h2>
+        	Submitted by {{submission.first_name}} {{submission.last_name}}<br>
+        	Submitted on {{submission.submission_time}}<br>
+        	Attempt number: {{submission.submission_number}}<br>
+        	Grade: <b>{{submission.grade}}</b><br>
+        	<br>
+        	<h3>Grade Results</h3>
         {% endif %}
         <hr>
         <p>{{grader_output|linebreaks}}</p>
+        <br>
+        {% if submission %}
+        	<p>Please bookmark the link below to view these results again later:<br>
+        	<a href={% url collector.views.view_submission assignment.course.year assignment.course.term assignment.course.course_num assignment.name submission.id %}>View your submission</a>
+        	</p>
+        {% endif %}
         <br>
         <br>
         <a href={% url collector.views.view_course assignment.course.year assignment.course.term assignment.course.course_num %}>Back to the course</a>

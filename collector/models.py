@@ -52,6 +52,7 @@ class GenericAssignment(models.Model):
     
     class Meta:
         abstract = True
+        unique_together = ('course', 'name')
 
 class Assignment(GenericAssignment):
     # TODO: Rename to JARAssignment
@@ -85,6 +86,14 @@ class GenericSubmission(models.Model):
         
 class Submission(GenericSubmission):
     # TODO: Rename to JARSubmission
+    @models.permalink
+    def get_absolute_url(self):
+        return ('collector.views.view_submission', [], {
+                'year': self.assignment.course.year,
+                'term':self.assignment.course.term,
+                'course_id':self.assignment.course.course_num,
+                'assn_name':self.assignment.name,
+                'sub_id':self.id})
     file = models.FileField(upload_to=GenericSubmission.fileurl)
     grade_log = models.FileField(blank=True, upload_to=GenericSubmission.fileurl)
     grade = models.CharField(max_length=100, blank=True)
