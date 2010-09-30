@@ -17,7 +17,7 @@
     	<hr>
         <ul>
         	{% for l in late %}
-        		<a href="{% url collector.views.view_assignment course.year course.term l.course.course_num l.name %}"> <li>{{l.name}}  <b>Due:{{l.due_date}}</li></b> </a>
+        		<a href="{% url collector.views.view_assignment course.year course.term l.course.course_num l.name %}"> <li>{{l.name}}  Due:{{l.due_date}}</li></a>
         	{% endfor %}
         	{% if late %}
         	<hr>

@@ -14,7 +14,7 @@
 	<body>
         <ul>
     		{% for course in course_list %}
-    			<a href="{% url collector.views.view_course course.year course.term course.course_num %}" <li>{{course.course_num}} {{course.course_title}}</a>
+    			<a href="{% url collector.views.view_course course.year course.term course.course_num %}" <li>{{course.course_num}} {{course.course_title}}</li></a>
     		{% endfor %}
     	</ul>
 	</body>
