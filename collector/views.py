@@ -192,8 +192,12 @@ def _grader(assignment, submission):
     ## Extract the grade information from the output
         #match = re.search(r'([1]) error|(\d+) errors', output)
         match = re.search(r'^(\d+)\s+error', output, re.M)
+        if match:
+            submission.grade = "0 ({0} compiler errors)".format(match.group(1))
+        else:
+            ### If something unpredicted happens...
+            submission.grade = "Unable to parse grade. (See grade log for details)"
     ## Save to the submission
-        submission.grade = "0 ({0} compiler errors)".format(match.group(1))
         submission.save()
     ## close open files
         file.close()
@@ -228,14 +232,22 @@ def _grader(assignment, submission):
             else:
                 regex = "^Exception\s+in\s+thread\s+\"main\"\s+(?P<exception>[a-zA-Z0-9._]+?):\s+(?P<class>[a-zA-Z0-9._]+?)$"
                 match = re.search(regex, output, re.M)
-                results = match.groupdict()
-                submission.grade = "0 (Exception in thread \"main\" {0}: {1})".format(results['exception'], results['class'])
+                if match:
+                    results = match.groupdict()
+                    submission.grade = "0 (Exception in thread \"main\" {0}: {1})".format(results['exception'], results['class'])
+                else:
+                    ### If something unpredicted happens...
+                    submission.grade = "Unable to parse grade. (See grade log for details)"
     ### If java runs just fine
         else:
             regex = r"^OK\s+[(](?P<successful>\d+?)\s+tests[)]$"
             match = re.search(regex, output, re.M)
-            results = match.groupdict()
-            submission.grade = "{0}/{0}".format(results['successful'])
+            if match:
+                results = match.groupdict()
+                submission.grade = "{0}/{0}".format(results['successful'])
+            else:
+                ### If something unpredicted happens...
+                submission.grade = "Unable to parse grade. (See grade log for details)"
     ## Save to the submission    
         submission.save()
     ## close open files
