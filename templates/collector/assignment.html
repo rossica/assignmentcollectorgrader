@@ -18,6 +18,7 @@
         Instructions: {{assignment.instructions}}<br>
         Maximum allowed submissions <b>{% if assignment.max_submissions == 0 %} unlimited {% else %} {{assignment.max_submissions}} {% endif %}</b><br>
         Due date: <b>{{assignment.due_date}}</b><br>
+        Late submissions{% if assignment.allow_late %} are {% else %} are <b>NOT</b> {% endif %}allowed.<br>
     	<br>
         
         {% if form %}

@@ -17,12 +17,13 @@ class Course(models.Model):
     ('spring', 'Spring'),
     ('summer', 'Summer'),
     )
-    @models.permalink
+    #@models.permalink
     def get_absolute_url(self):
-        return ('view_course', (), {
-                'year': self.year,
-                'term':self.term,
-                'course_id':self.course_num,})
+        #return ('view_course', (), {
+        #        'year': self.year,
+        #        'term':self.term,
+        #        'course_id':self.course_num,})
+        return "/{0}/{1}/{2}".format(self.year, self.term, self.course_num)
     course_num = models.CharField("Course Number", max_length=8, help_text='For example: CS260.')
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
     description = models.TextField(blank=True, verbose_name='Course Description')
@@ -56,13 +57,14 @@ class GenericAssignment(models.Model):
 
 class Assignment(GenericAssignment):
     # TODO: Rename to JARAssignment
-    @models.permalink
+    #@models.permalink
     def get_absolute_url(self):
-        return ('view_assignment', (), {
-                'year': self.course.year,
-                'term':self.course.term,
-                'course_id':self.course.course_num,
-                'assn_name':self.name})
+        #return ('view_assignment', (), {
+        #        'year': self.course.year,
+        #        'term':self.course.term,
+        #        'course_id':self.course.course_num,
+        #        'assn_name':self.name})
+        return "/{0}/{1}/{2}/{3}".format(self.course.year, self.course.term, self.course.course_num, self.name)
     test_file = models.FileField(upload_to=GenericAssignment.testfileurl, blank=True)
 
 class GenericSubmission(models.Model):
@@ -86,14 +88,15 @@ class GenericSubmission(models.Model):
         
 class Submission(GenericSubmission):
     # TODO: Rename to JARSubmission
-    @models.permalink
+    #@models.permalink
     def get_absolute_url(self):
-        return ('collector.views.view_submission', [], {
-                'year': self.assignment.course.year,
-                'term':self.assignment.course.term,
-                'course_id':self.assignment.course.course_num,
-                'assn_name':self.assignment.name,
-                'sub_id':self.id})
+        #return ('collector.views.view_submission', [], {
+        #        'year': self.assignment.course.year,
+        #        'term':self.assignment.course.term,
+        #        'course_id':self.assignment.course.course_num,
+        #        'assn_name':self.assignment.name,
+        #        'sub_id':self.id})
+        return "/{0}/{1}/{2}/{3}/submissions/{4}".format(self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.id)
     file = models.FileField(upload_to=GenericSubmission.fileurl)
     grade_log = models.FileField(blank=True, upload_to=GenericSubmission.fileurl)
     grade = models.CharField(max_length=100, blank=True)
