@@ -16,7 +16,7 @@
         {{assignment.name}}<br>
         <a href={% url collector.views.view_course assignment.course.year assignment.course.term assignment.course.course_num %}> {{assignment.course.course_num}} - {{assignment.course.course_title}}</a><br>
         Instructions: {{assignment.instructions}}<br>
-        Maximum allowed submissions <b>{% if assignment.max_submissions == 0 %} unlimited {% else %} {{assignment.max_submissions}} {% endif %}</b><br>
+        Maximum allowed attempts <b>{% if assignment.max_submissions == 0 %} unlimited {% else %} {{assignment.max_submissions}} {% endif %}</b><br>
         Due date: <b>{{assignment.due_date}}</b><br>
         Late submissions{% if assignment.allow_late %} are {% else %} are <b>NOT</b> {% endif %}allowed.<br>
     	<br>

@@ -101,7 +101,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
             
             # Determine if the maximum number of submissions has been reached.
             if count >= assn.max_submissions > 0:
-                error_msg = "I'm sorry, but you've reached the maximum number of submissions."
+                error_msg = "I'm sorry, but you've reached the maximum number of attempts."
                 return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
             
             # Save the form to disk/database

@@ -1,7 +1,30 @@
 from django.db import models
 from django import forms
 from assignmentcollectorgrader.settings import MEDIA_ROOT
+from django.core.files.storage import Storage, FileSystemStorage
 
+
+##################
+# Storage System #
+##################
+class AssignmentFileStorage(FileSystemStorage):
+    def save(self, name, content):
+        """
+        Saves new content to the file specified by name. The content should be a
+        proper File object, ready to be read from the beginning.
+        """
+        from django.utils.encoding import force_unicode
+        # Get the proper name for the file, as it will actually be saved.
+        if name is None:
+            name = content.name
+    
+        if self.exists(name): # If the file already exists, delete the current one so we can save the new one
+            self.delete(name)
+            
+        name = self._save(name, content)
+    
+        # Store filenames with forward slashes, even on Windows
+        return force_unicode(name.replace('\\', '/'))
 
 ##################
 ###   Models   ###
@@ -65,7 +88,7 @@ class Assignment(GenericAssignment):
         #        'course_id':self.course.course_num,
         #        'assn_name':self.name})
         return "/{0}/{1}/{2}/{3}".format(self.course.year, self.course.term, self.course.course_num, self.name)
-    test_file = models.FileField(upload_to=GenericAssignment.testfileurl, blank=True)
+    test_file = models.FileField(upload_to=GenericAssignment.testfileurl, storage=AssignmentFileStorage(), blank=True)
 
 class GenericSubmission(models.Model):
     def fileurl(self, filename):
@@ -127,6 +150,16 @@ class AssignmentAdminForm(forms.ModelForm):
         if not re.match(r'^[a-zA-Z][\w\-]{,24}$', name):
             raise forms.ValidationError("Name must begin with a letter, and only contain letters, numbers, _ and -")
         return name
+    
+    def clean_test_file(self):
+        import os.path, re
+        tf = self.cleaned_data['test_file']
+        name, extension = os.path.splitext(tf.name)
+        
+        if not re.search(r'(\.jar$|\.java$|\.doc(x)?$)', extension):
+            raise forms.ValidationError("Must be a Jar, Java, or Doc")
+        
+        return tf
 
 class SubmissionForm(forms.ModelForm):
     # TODO: Create a JAR-specific JAR submission form, and a generic Submission form
