@@ -156,8 +156,8 @@ class AssignmentAdminForm(forms.ModelForm):
         tf = self.cleaned_data['test_file']
         name, extension = os.path.splitext(tf.name)
         
-        if not re.search(r'(\.jar$|\.java$|\.doc(x)?$)', extension):
-            raise forms.ValidationError("Must be a Jar, Java, or Doc")
+        if not re.search(r'(\.jar$|\.java$|)', extension.lower()):
+            raise forms.ValidationError("Must be a Jar or a Java file")
         
         return tf
 
