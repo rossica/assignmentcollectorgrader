@@ -164,6 +164,12 @@ class AssignmentAdminForm(forms.ModelForm):
 class SubmissionForm(forms.ModelForm):
     # TODO: Create a JAR-specific JAR submission form, and a generic Submission form
     
+    def clean_first_name(self):
+        return self.cleaned_data['first_name'].strip()
+    
+    def clean_last_name(self):
+        return self.cleaned_data['last_name'].strip()
+    
     def clean_file(self):
         import zipfile, os.path
         
