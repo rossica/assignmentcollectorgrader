@@ -126,7 +126,6 @@ class Submission(GenericSubmission):
     
 #################
 ###   Forms   ###
-# TODO: Create Assignment form that validates the assignment name
 #################
 
 class CourseAdminForm(forms.ModelForm):

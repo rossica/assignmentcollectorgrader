@@ -212,8 +212,18 @@ def _grader(assignment, submission):
     else: 
     ## Run the tests
         name, ext = os.path.splitext(os.path.basename(assignment.test_file.name))
-        args2 = ['java', 'junit.textui.TestRunner', name]
-        java = subprocess.call(args=args2, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
+        args2 = ['java', '-Xms32m', '-Xmx32m', 'junit.textui.TestRunner', name]
+        java_proc = subprocess.Popen(args=args2, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
+        ## Have a watchdog timer of 30 seconds in case of infinite loops in code.
+        itercount = 0
+        while java_proc.poll() is None and (itercount < 31):
+            itercount += 1
+            time.sleep(1)
+        ## If the code is still executing after 30 seconds, kill the process.
+        if itercount > 30:
+            java_proc.kill()
+            os.write(output_handle, "\nExecution took longer than {0} seconds, terminating test. Possible infinite loop?".format(itercount))
+        java = java_proc.returncode
     ## Save the test output to the submission
         file = File(open(output_path))
         submission.grade_log.save(os.path.basename(output_path), file, save=True)  
@@ -221,7 +231,7 @@ def _grader(assignment, submission):
         output = submission.grade_log.read()
     ## Extract the grade information from the output
     ### If java returns with an error code
-        if java > 0:
+        if java != 0:
     ### First check for a JUnit failure
             regex = r"^Tests\s+run:\s+(?P<total>\d+?),\s+Failures:\s+(?P<failures>\d+?),\s+Errors:\s+(?P<errors>\d+?)$"
             match = re.search(regex, output, re.M)
@@ -236,8 +246,14 @@ def _grader(assignment, submission):
                     results = match.groupdict()
                     submission.grade = "0 (Exception in thread \"main\" {0}: {1})".format(results['exception'], results['class'])
                 else:
-                    ### If something unpredicted happens...
-                    submission.grade = "Unable to parse grade. (See grade log for details)"
+                    ### Watchdog time-out (infinite loop)
+                    regex = "Execution took longer than \d+ seconds, terminating test\. Possible infinite loop\?"
+                    match = re.search(regex, output, re.M)
+                    if match:
+                        submission.grade = "0 (infinite loop?)"
+                    else:
+                        ### If something unpredicted happens...
+                        submission.grade = "Unable to parse grade. (See grade log for details)"
     ### If java runs just fine
         else:
             regex = r"^OK\s+[(](?P<successful>\d+?)\s+tests[)]$"
