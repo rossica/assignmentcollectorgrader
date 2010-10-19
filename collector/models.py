@@ -30,7 +30,6 @@ class AssignmentFileStorage(FileSystemStorage):
 ##################
 ###   Models   ###
 ##################
-# TODO: Create Generic Assignment and Submission objects, and subclass them to make JAR-specific versions
 
 class Course(models.Model):
     def __unicode__(self):

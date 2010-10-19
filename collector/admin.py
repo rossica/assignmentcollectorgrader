@@ -73,7 +73,7 @@ class AssignmentAdmin(admin.ModelAdmin):
                 # Add the assignment, the latest unique submissions, and warnings (if any) to the output
                 grades.append([assn, submissions, warning])
         return render_to_response('collector/grades.html', {'grades':grades,})
-    display_grades.short_description = "Display grades"
+    display_grades.short_description = "Generate gradesheet"
     
 
 
