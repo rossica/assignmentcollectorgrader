@@ -91,7 +91,17 @@ class SubmissionAdmin(admin.ModelAdmin):
     )
     list_display = ('__unicode__', 'last_name', 'first_name', 'course', 'assignment', 'submission_time', 'grade')
     list_filter = ('course', 'assignment', 'submission_time', 'last_name',)
-    readonly_fields = ('assignment', 'course', 'submission_time', 'grade',)
+    readonly_fields = ('first_name', 'last_name', 'assignment', 'course', 'submission_time', 'grade',)
+    actions = ['lowercase_names']
+    def lowercase_names(self, request, queryset):
+        for sub in queryset:
+            sub.first_name = sub.first_name.lower()
+            sub.last_name = sub.last_name.lower()
+            sub.save()
+            # Terrible, inefficient code. 
+            # But queryset.update(first_name=first_name.lower(), last_name=last_name.lower()) doesn't seem to want to work.
+            # Also, it will only be used once, so it's acceptable.
+    lowercase_names.short_description = "Convert student names to Lowercase"
 
 admin.site.register(Course, CourseAdmin)
 admin.site.register(Assignment, AssignmentAdmin)

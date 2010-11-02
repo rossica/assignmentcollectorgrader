@@ -134,8 +134,6 @@ def submit_assignment(request, year, term, course_id, assn_name):
 def _grader(assignment, submission):
     import os, re, shutil, subprocess, tempfile, time, zipfile
     # create a temporary directory
-    #submission_dir, file = os.path.split(submission.file.path)
-    #temp = tempfile.mkdtemp(dir=submission_dir)
     temp = tempfile.mkdtemp()
     # extract the student's work into the temporary directory
     ## create a zipfile object
@@ -144,9 +142,13 @@ def _grader(assignment, submission):
     files = jar.namelist()
     ## find all "legal" files in the jar/zip (files that don't start with / and don't have .. in them)
     to_extract = []
+    java_files = []
     for i in files:
         if not re.search("(^/|/?\.\./|^META-INF)", i):
             to_extract.append(i)
+            ## Add java files to their own list
+            if re.search("\.java$", i):
+                java_files.append(i)
     ## extract legal files to the temporary directory
     jar.extractall(temp, to_extract) 
     # delete all class files 
@@ -155,12 +157,35 @@ def _grader(assignment, submission):
         if re.search("\.class$", i):
     ## delete them
             os.remove(os.path.join(temp,i))
-    # if the grader is a java file, copy it to the temporary dir
-    # the extra-complicated manner this is accomplished in, is to assure case-sensitivity
+            
+    # The extra-complicated manner copying is accomplished in is to assure case-sensitivity
+    # On windows platforms, filename case is not maintained when stored on the filesystem.
+    # It is, however, maintained in the database.
     grader_path, grader_name = os.path.split(assignment.test_file.path)
     grader_name = os.path.basename(assignment.test_file.name)
-    shutil.copy2(os.path.join(grader_path, grader_name), temp)
-    # TODO: if the grader is a JAR, extract the grader into the temporary dir
+    # if the grader is a java file, copy it to the temporary dir
+    if os.path.splitext(assignment.test_file.path.lower())[1] == '.java':
+        shutil.copy2(os.path.join(grader_path, grader_name), temp)
+        java_files.append(grader_name)
+    
+    # if the grader is a JAR, extract the grader into the temporary dir
+    elif os.path.splitext(assignment.test_file.path.lower())[1] == '.jar':
+        shutil.copy2(os.path.join(grader_path, grader_name), temp)
+        
+        grader_jar = zipfile.ZipFile(os.path.join(temp, grader_name))
+        grader_extract = []
+        for i in grader_jar.namelist():
+            if not re.search("(^/|/?\.\./|^META-INF)", i):
+                grader_extract.append(i)
+                # To make sure the grader files get compiled, append them to the list
+                if re.search("\.java$", i):
+                    java_files.append(i)
+        # Extract the files
+        grader_jar.extractall(temp, grader_extract)
+                
+        # Housekeeping: close the jar.
+        grader_jar.close()
+        
     # compile all java files, saving all output
     output_handle, output_path = tempfile.mkstemp(suffix=".log", dir=temp, text=True)
     ## add the location of JUnit to the classpath, or environment
@@ -172,14 +197,7 @@ def _grader(assignment, submission):
     ## Get list of .java files to compile.
     args = ['javac',  ] #  '-verbose', 
     ## Append the java files to the list of args
-    args.append(grader_name)
-    for i in to_extract:
-        if re.search("\.java$", i):
-            args.append(i)
-    ## Alternate way of doing it
-    #for i in os.listdir(temp):
-    #    if re.search("\.java$", i):
-    #        args.append(i)
+    args.extend(java_files)
     ## actually compile
     javac = subprocess.call(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
     # If compilation is unsuccessful, return the program output
