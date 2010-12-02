@@ -58,7 +58,10 @@ def view_submission(request, year, term, course_id, assn_name, sub_id):
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
     sub = get_object_or_404(Submission, id=sub_id)
     
-    grader_output = sub.grade_log.read()
+    if sub.grade_log:
+        grader_output = sub.grade_log.read()
+    else:
+        grader_output = "No grade log."
     
     return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':sub})
 
@@ -134,7 +137,8 @@ def submit_assignment(request, year, term, course_id, assn_name):
 def _grader(assignment, submission):
     import os, re, shutil, subprocess, tempfile, time, zipfile
     # create a temporary directory
-    temp = tempfile.mkdtemp()
+    submission_dir, file = os.path.split(submission.file.path) # temporary fix for filling the temp directory
+    temp = tempfile.mkdtemp(dir=submission_dir, suffix=submission.last_name) 
     # extract the student's work into the temporary directory
     ## create a zipfile object
     jar = zipfile.ZipFile(submission.file.path)
