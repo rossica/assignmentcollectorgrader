@@ -54,6 +54,7 @@ def view_assignment(request, year, term, course_id, assn_name):
     return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form,})
 
 def view_submission(request, year, term, course_id, assn_name, sub_id):
+    import os
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
     sub = get_object_or_404(Submission, id=sub_id)
@@ -62,9 +63,18 @@ def view_submission(request, year, term, course_id, assn_name, sub_id):
         if sub.grade_log.size < 2097152:
             grader_output = sub.grade_log.read()
         else:
-            grader_output="Grade log too large to display.  Please remove any extraneous output (println(), etc.) before submitting again."
+            f = open(sub.grade_log.path)
+            f.seek(0)
+            grader_output = f.read(100000)
+            grader_output +="\n=================================================================================="
+            grader_output +="\n Grade results too long, truncating.............................................\n"
+            grader_output +="==================================================================================\n"
+            f.seek(-100000, os.SEEK_END)
+            grader_output += f.read(100000)
+            grader_output += "\n Grade results are too long. Please remove any extraneous output (println(), etc.) before submitting again."
+            f.close()
     else:
-        grader_output = "No grade log."
+        grader_output = "No grade results to display."
     
     return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':sub})
 
@@ -258,7 +268,19 @@ def _grader(assignment, submission):
         file = File(open(output_path))
         submission.grade_log.save(os.path.basename(output_path), file, save=True)  
     ## read in the output
-        output = submission.grade_log.read()
+        output = ''
+        if file.size < 2097152:
+            output = submission.grade_log.read()
+        else:
+            f = open(output_path)
+            f.seek(0)
+            output = f.read(100000)
+            output +="\n=================================================================================="
+            output +="\n Grade results too long, truncating.............................................\n"
+            output +="==================================================================================\n"
+            f.seek(-100000, os.SEEK_END)
+            output += f.read(100000)
+            f.close()
     ## Extract the grade information from the output
     ### If java returns with an error code
         if java != 0:
