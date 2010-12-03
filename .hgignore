@@ -7,3 +7,8 @@ syntax: glob
 # switch to regexp syntax.
 #syntax: regexp
 #^\.pc/
+
+syntax: regexp
+^media$
+^test(\d)?$
+^junit482$

@@ -156,11 +156,16 @@ def _grader(assignment, submission):
     ## extract legal files to the temporary directory
     jar.extractall(temp, to_extract) 
     # delete all class files 
-    for i in os.listdir(temp):
+    # Recursively deleting class files
+    for walk_root, walk_dirs, walk_files in os.walk(temp):
+        for name in walk_files:
+            if re.search("\.class$", name):
+                os.remove(os.path.join(walk_root, name))
+    #for i in os.listdir(temp):
     ## find all class files
-        if re.search("\.class$", i):
+    #    if re.search("\.class$", i):
     ## delete them
-            os.remove(os.path.join(temp,i))
+    #        os.remove(os.path.join(temp,i))
             
     # The extra-complicated manner copying is accomplished in is to assure case-sensitivity
     # On windows platforms, filename case is not maintained when stored on the filesystem.
