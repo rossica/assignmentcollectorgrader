@@ -59,7 +59,10 @@ def view_submission(request, year, term, course_id, assn_name, sub_id):
     sub = get_object_or_404(Submission, id=sub_id)
     
     if sub.grade_log:
-        grader_output = sub.grade_log.read()
+        if sub.grade_log.size < 2097152:
+            grader_output = sub.grade_log.read()
+        else:
+            grader_output="Grade log too large to display.  Please remove any extraneous output (println(), etc.) before submitting again."
     else:
         grader_output = "No grade log."
     
