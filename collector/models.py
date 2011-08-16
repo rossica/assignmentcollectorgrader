@@ -171,6 +171,9 @@ class AssignmentAdminForm(forms.ModelForm):
     def clean_test_file(self):
         import os.path, re
         tf = self.cleaned_data['test_file']
+        if not tf:
+            raise forms.ValidationError("This assignment must include a JUnit test script.")
+        
         name, extension = os.path.splitext(tf.name)
         
         if not re.search(r'(\.jar$|\.java$|)', extension.lower()):
