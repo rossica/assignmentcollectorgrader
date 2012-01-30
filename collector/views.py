@@ -1,5 +1,5 @@
 #    Assignment Collector/Grader - a Django app for collecting and grading code
-#    Copyright (C) 2010,2011  Anthony Rossi <anro@acm.org>
+#    Copyright (C) 2010,2011,2012  Anthony Rossi <anro@acm.org>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -42,6 +42,9 @@ def course_index(request):
 def specific_term_course_index(request, year, term):
     list = Course.objects.filter(year=year, term=term.lower())
     return render_to_response('collector/index.html', {'course_list':list, 'specific_term_course_index':(year,term), })
+
+def view_about(request):
+    return render_to_response('collector/about.html', {'major_version':MAJOR_VERSION, 'minor_version':MINOR_VERSION, })
 
 def view_course(request, year, term, course_id):
     course = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)

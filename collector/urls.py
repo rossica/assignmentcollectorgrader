@@ -1,5 +1,5 @@
 #    Assignment Collector/Grader - a Django app for collecting and grading code
-#    Copyright (C) 2010,2011  Anthony Rossi <anro@acm.org>
+#    Copyright (C) 2010,2011,2012  Anthony Rossi <anro@acm.org>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf.urls.defaults import *
-from assignmentcollectorgrader.collector.views import course_index, specific_term_course_index, view_course, view_assignment, view_submission, submit_assignment
+from assignmentcollectorgrader.collector.views import course_index, specific_term_course_index, view_course, view_assignment, view_submission, submit_assignment, view_about
 
 urlpatterns = patterns('',
     # Example:
@@ -27,4 +27,5 @@ urlpatterns = patterns('',
     (r'^(?P<year>\d{4})/(?P<term>(?i)(summer|spring|winter|fall))/(?P<course_id>[A-Za-z]{1,4}\d{3}[A-Za-z]?)/(?P<assn_name>[A-Za-z][A-Za-z0-9_\-]*)/$', view_assignment),
     (r'^(?P<year>\d{4})/(?P<term>(?i)(summer|spring|winter|fall))/(?P<course_id>[A-Za-z]{1,4}\d{3}[A-Za-z]?)/(?P<assn_name>[A-Za-z][A-Za-z0-9_\-]*)/submissions/(?P<sub_id>\d+)/$', view_submission),
     (r'^(?P<year>\d{4})/(?P<term>(?i)(summer|spring|winter|fall))/(?P<course_id>[A-Za-z]{1,4}\d{3}[A-Za-z]?)/(?P<assn_name>[A-Za-z][A-Za-z0-9_\-]*)/submit/$', submit_assignment),
+    (r'^about/$', view_about),
 )

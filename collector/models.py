@@ -1,5 +1,5 @@
 #    Assignment Collector/Grader - a Django app for collecting and grading code
-#    Copyright (C) 2010,2011  Anthony Rossi <anro@acm.org>
+#    Copyright (C) 2010,2011,2012  Anthony Rossi <anro@acm.org>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,13 @@ from django import forms
 from assignmentcollectorgrader.settings import MEDIA_ROOT
 from django.core.files.storage import Storage, FileSystemStorage
 from django.contrib.auth.models import User
+
+# large changes, e.g. API changes, 
+# database changes (that require syncdb and database export/import)
+MAJOR_VERSION = 1 
+# feature development, bug fixes are rolled into feature enhancements
+# Security fixes do get their own version
+MINOR_VERSION = 0 
 
 
 ##################
