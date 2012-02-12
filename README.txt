@@ -1,11 +1,11 @@
 TABLE OF CONTENTS
 1. Introduction
 2. Installation for Development
-	2.1 Prerequisites for Installation
-	2.2 Installation
+    2.1 Prerequisites for Installation
+    2.2 Installation
 3. Installation for Server
-	3.1 Prerequisites for Server
-	3.2 Installation Steps
+    3.1 Prerequisites for Server
+    3.2 Installation Steps
 
 
 1. INTRODUCTION
@@ -34,10 +34,10 @@ and we appreciate your contribution.
 There are a few things that have to be in place before you can start
 developing ACG.
 Assignment Collector/Grader needs:
-	*	Python 2.x series, 2.6 or later.		  (http://www.python.org)
-	*	Django 1.2 or later. 			   (http://www.djangoproject.com)
-	*	JUnit 4.x or later						   (http://www.junit.org)
-	
+    *    Python 2.x series, 2.6 or later.         (http://www.python.org)
+    *    Django 1.3 or later.              (http://www.djangoproject.com)
+    *    JUnit 4.x or later                        (http://www.junit.org)
+    
 It is beyond the scope of this document to tell you how to install the
 prerequisites, but Django and Python have excellent installation guides
 available at their websites. 
@@ -102,11 +102,11 @@ It is expected that you have basic system administration skills.
 3.1 PREREQUISITES FOR SERVER
 Before you can run ACG on your server, you need a few things:
 
-	*	Python 2.x series, 2.6 or later.		  (http://www.python.org)
-	*	Django 1.2 or later. 			   (http://www.djangoproject.com)
-	*	JUnit 4.x or later						   (http://www.junit.org)
-	*	An HTTP server with FastCGI or WSGI support.
-	*	An SQL server (optional, see below)
+    *    Python 2.x series, 2.6 or later.         (http://www.python.org)
+    *    Django 1.3 or later.              (http://www.djangoproject.com)
+    *    JUnit 4.x or later                        (http://www.junit.org)
+    *    An HTTP server with FastCGI or WSGI support.
+    *    An SQL server (optional, see below)
 
 It is beyond the scope of this document to explain how to properly set up
 and install Python and Django, but their websites have excellent guides
@@ -116,12 +116,12 @@ explain how to do that here, we refer you to that document as well.
 
 You only need the JUnit JAR file, and to save it to the project directory
 and change a setting (explained below), no installation required. Save it
-someplace on your computer for now.
+some place on your computer for now.
 
 If you expect to serve many concurrent users, you will want to use an SQL
 server like MySQL or PostgreSQL. The default of SQLite will do for a 
-single class of about <40 students. To support multiple classes, a full
-SQL server is recommended.
+single class of about <40 students. To support multiple classes, a full-
+featured SQL DBMS (like MySQL) is recommended.
 
 
 3.2 INSTALLATION STEPS
@@ -142,28 +142,28 @@ not ready for production use.
 Now you have to change a few settings specific to your installation.
 Go into the assignmentcollectorgrader folder. Open settings.py in your 
 favorite text editor.
-	a)	Set DEBUG to False. Otherwise, in the event of an error in the
-	code, users are greeted with a stack trace and lots of debug info
-	that could be used to compromise the server.
-	
-	b) 	Set JUNIT_ROOT to the absolute path to the actual location of the
-	JUnit JAR you downloaded earlier. For simplicity, we like to put it 
-	into it's own folder under the project directory.
-	
-	c)	If you set up your own database server, you will need to change
-	the databate settings under the DATABASES list. First, select the 
-	database engine you are using, then the name of the database, and the
-	other related settings relevant to your database configuration.
-	
-	d)	Update the MEDIA_ROOT and MEDIA_URL settings if you require a
-	different configuration for those.
-	
-	e)	*IMPORTANT* Change the SECRET_KEY value to a new random value.
-	It is very important that you DO NOT use the default value.
-	
+    a)    Set DEBUG to False. Otherwise, in the event of an error in the
+    code, users are greeted with a stack trace and lots of debug info
+    that could be used to compromise the server.
+    
+    b)     Set JUNIT_ROOT to the absolute path to the actual location of
+    the JUnit JAR you downloaded earlier. For simplicity, we like to put
+    it into it's own folder under the project directory.
+    
+    c)    If you set up your own database server, you will need to change
+    the database settings under the DATABASES list. First, select the 
+    database engine you are using, then the name of the database, and the
+    other related settings relevant to your database configuration.
+    
+    d)    Update the MEDIA_ROOT and MEDIA_URL settings if you require a
+    different configuration for those.
+    
+    e)    *IMPORTANT* Change the SECRET_KEY value to a new random value.
+    It is very important that you DO NOT use the default value.
+    
 With the settings updated to the values specific to your installation,
 now it is time to initialize the database for use.
-Open a shell and naviagate to the project directory, then run:
+Open a shell and navigate to the project directory, then run:
 python manage.py syncdb
 
 This will initialize the database with the necessary tables for ACG and 

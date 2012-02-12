@@ -77,7 +77,7 @@ class Course(models.Model):
     year = models.IntegerField(default=2010, help_text='The year this course is offered.')
     term = models.CharField(max_length=6, choices=TERM_CHOICES, help_text='The term this course is offered.')
     email = models.EmailField("Email to send grades to", blank=True)
-    #creator = models.ForeignKey(User, default=1)
+    #creator = models.ForeignKey(User, default=1) ## TODO Milestone 2.0
     
 class GenericAssignment(models.Model):
     def testfileurl(self, filename):
@@ -97,14 +97,14 @@ class GenericAssignment(models.Model):
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access. Overrides any specified Course passkey.')
     max_submissions = models.IntegerField(default=0, help_text='Maximum allowed submissions per student. 0 for unlimited.')
     allow_late = models.BooleanField("Allow Late Submissions", default=False)
-    #creator = models.ForeignKey(User, default=1)
+    #creator = models.ForeignKey(User, default=1) ## TODO Milestone 2.0
     
     class Meta:
         abstract = True
         unique_together = ('course', 'name')
 
 class Assignment(GenericAssignment):
-    # TODO: Rename to JARAssignment
+    # TODO: 2.0 Rename to JARAssignment
     #@models.permalink
     def get_absolute_url(self):
         #return ('view_assignment', (), {
@@ -130,12 +130,15 @@ class GenericSubmission(models.Model):
     last_name = models.CharField(max_length=25)
     submission_time = models.DateTimeField(auto_now_add=True)
     submission_number = models.IntegerField(default=1)
+    # TODO: add fields to store the grade as tests passed and tests failed
+    # TODO: redo the entire grade reporting framework to use this.
+    ## Milestone: 2.0+
     
     class Meta:
         abstract = True
         
 class Submission(GenericSubmission):
-    # TODO: Rename to JARSubmission
+    # TODO: 2.0 Rename to JARSubmission
     #@models.permalink
     def get_absolute_url(self):
         #return ('collector.views.view_submission', [], {
