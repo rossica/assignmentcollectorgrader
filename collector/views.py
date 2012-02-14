@@ -326,7 +326,7 @@ def _grader(assignment, submission):
                         submission.grade = "Unable to parse grade. (See grade log for details)"
     ### If java runs just fine
         else:
-            regex = r"^OK\s+[(](?P<successful>\d+?)\s+tests[)]$"
+            regex = r"^OK\s+[(](?P<successful>\d+?)\s+test(s)?[)]$"
             match = re.search(regex, output, re.M)
             if match:
                 results = match.groupdict()
