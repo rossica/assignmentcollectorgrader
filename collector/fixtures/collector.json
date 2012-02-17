@@ -1,0 +1,44 @@
+[
+{"pk": 1, 
+	"model": "collector.course", 
+	"fields": {
+		"term": "fall", 
+		"course_title": "Testing ACG", 
+		"description": "This course tests Assignment collector/grader. If ACG passes these tests, then you pass this course.", 
+		"passkey": "", 
+		"year": 9999, 
+		"course_num": "CS000", 
+		"email": ""
+	}
+}, 
+
+{"pk": 1, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": false, 
+		"due_date": "2099-02-13 22:21:26", 
+		"test_file": "tests/9999/fall/CS000/lab999-TestLab/SimpleJUnitTest.java", 
+		"name": "lab999-TestLab", 
+		"passkey": "", 
+		"course": 1, 
+		"max_submissions": 0, 
+		"start_date": "2012-02-13 22:21:03", 
+		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true."
+	}
+}, 
+
+{"pk": 1, 
+	"model": "collector.submission", 
+	"fields": {
+		"first_name": "tester", 
+		"last_name": "test", 
+		"grade_log": "submissions/9999/fall/CS000/lab999-TestLab/test_tester_1.log", 
+		"grade": "1/1", 
+		"assignment": 1, 
+		"course": 1, 
+		"submission_number": 1, 
+		"file": "submissions/9999/fall/CS000/lab999-TestLab/test_tester_1.jar", 
+		"submission_time": "2012-02-13 22:53:18"
+	}
+}
+]

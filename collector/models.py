@@ -124,7 +124,7 @@ class GenericSubmission(models.Model):
     def __unicode__(self):
         return "{0} {1}: {2} #{3}".format(self.last_name, self.first_name, self.assignment.__unicode__(), self.submission_number)
     
-    assignment = models.ForeignKey(Assignment)
+    assignment = models.ForeignKey(Assignment) ## TODO 2.0 must move to specific child model
     course = models.ForeignKey(Course)
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
@@ -179,15 +179,23 @@ class AssignmentAdminForm(forms.ModelForm):
         return name
     
     def clean_test_file(self):
-        import os.path, re
+        import os.path, re, zipfile
         tf = self.cleaned_data['test_file']
         if not tf:
             raise forms.ValidationError("This assignment must include a JUnit test script.")
         
         name, extension = os.path.splitext(tf.name)
         
-        if not re.search(r'(\.jar$|\.java$|)', extension.lower()):
+        if not re.search(r'(\.jar$|\.java$|^$)', extension.lower()):
             raise forms.ValidationError("Must be a Jar or a Java file")
+        
+        # Validate that uploaded JAR files are actually JAR files
+        if re.search(r'\.jar$', extension.lower()):
+            try:
+                z = zipfile.ZipFile(tf)
+                z.testzip()
+            except(zipfile.BadZipfile):
+                raise forms.ValidationError("Corrupted JAR file. Please remake JAR file.")
         
         return tf
 

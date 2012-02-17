@@ -64,7 +64,7 @@ USE_L10N = True
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = PROJECT_ROOT + '/media'
+MEDIA_ROOT = PROJECT_ROOT + '/testdata'
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
@@ -77,7 +77,7 @@ MEDIA_URL = '/media/'
 ADMIN_MEDIA_PREFIX = '/media/'
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = '(p&di%)y#+xke=iwlve1mu3zv+8di8tc!%zj64#i&oumq4_!rr'
+SECRET_KEY = 'not a secret. CHANGE THIS VALUE FOR SERVERS' # example - do NOT use: (p&di%)y#+xke=iwlve1mu3zv+8di8tc!%zj64#i&oumq4_!rr
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
