@@ -186,7 +186,7 @@ class AssignmentAdminForm(forms.ModelForm):
         
         name, extension = os.path.splitext(tf.name)
         
-        if not re.search(r'(\.jar$|\.java$|^$)', extension.lower()):
+        if not re.search(r'(\.jar$|\.java$)', extension.lower()):
             raise forms.ValidationError("Must be a Jar or a Java file")
         
         # Validate that uploaded JAR files are actually JAR files

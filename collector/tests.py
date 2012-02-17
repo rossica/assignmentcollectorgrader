@@ -211,9 +211,9 @@ class FormsTest(TestCase):
         self.assertFalse(asgnmt_form.is_valid(), "Failed to catch bad JAR: {0}".format(file_data['test_file']))
         
         #Now try a file that is neither Jar nor Java
-        f = open(PROJECT_ROOT+"/testdata/NotAJarOrJavaFile.txt")
-        file_data['test_file'] = SimpleUploadedFile('NotAJarOrJavaFile.txt', f.read())
-        f.close()
+        fake_ext = ''.join(random.sample("aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_", random.randint(0,5)))
+        
+        file_data['test_file'] = SimpleUploadedFile('NotAJarOrJavaFile.'+fake_ext, "ffffff")
         
         asgnmt_form = AssignmentAdminForm(data, file_data)
         
