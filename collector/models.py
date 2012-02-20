@@ -203,10 +203,12 @@ class SubmissionForm(forms.ModelForm):
     # TODO: Create a JAR-specific JAR submission form, and a generic Submission form
     
     def clean_first_name(self):
-        return self.cleaned_data['first_name'].strip().lower()
+        import re
+        return re.sub(r'[^a-z]', '', self.cleaned_data['first_name'].lower())
     
     def clean_last_name(self):
-        return self.cleaned_data['last_name'].strip().lower()
+        import re
+        return re.sub(r'[^a-z]', '', self.cleaned_data['last_name'].lower())
     
     def clean_file(self):
         import zipfile, os.path
@@ -228,7 +230,7 @@ class SubmissionForm(forms.ModelForm):
         
         # Verify File extension
         name, extension = os.path.splitext(f.name)
-        if not extension == '.jar':
+        if not extension.lower() == '.jar':
             raise forms.ValidationError("Must be a JAR file.")
 
         return f
@@ -241,6 +243,9 @@ class SubmissionFormP(SubmissionForm):
     passkey = forms.CharField(max_length=25, required=True)
     
     def clean(self):
+        # TODO: check to make sure we have an assignment and course object to test against
+        #    raise forms.ValidationError("No Submission instance supplied to this form. Tell a programmer.")
+        
         # If the passkey field is specified
         if 'passkey' in self.cleaned_data:
             p = self.cleaned_data['passkey']

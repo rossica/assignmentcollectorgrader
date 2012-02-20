@@ -12,6 +12,19 @@
 	}
 }, 
 
+{"pk": 2, 
+	"model": "collector.course", 
+	"fields": {
+		"term": "fall", 
+		"course_title": "Password Course", 
+		"description": "This course tests Assignment collector/grader. If ACG passes these tests, then you pass this course.", 
+		"passkey": "testPassword2", 
+		"year": 2000, 
+		"course_num": "CS001", 
+		"email": ""
+	}
+}, 
+
 {"pk": 1, 
 	"model": "collector.assignment", 
 	"fields": {
@@ -26,6 +39,52 @@
 		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true."
 	}
 }, 
+
+{"pk": 2, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": false, 
+		"due_date": "2099-02-13 22:21:26", 
+		"test_file": "tests/9999/fall/CS000/lab999-TestLab/SimpleJUnitTest.java", 
+		"name": "lab001-TestPassword", 
+		"passkey": "testPassword", 
+		"course": 1, 
+		"max_submissions": 0, 
+		"start_date": "2012-02-13 22:21:03", 
+		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true.<br> The password is testPassword"
+	}
+}, 
+
+
+{"pk": 3, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": false, 
+		"due_date": "2099-02-13 22:21:26", 
+		"test_file": "tests/9999/fall/CS000/lab999-TestLab/SimpleJUnitTest.java", 
+		"name": "lab001-TestPassword", 
+		"passkey": "testPassword", 
+		"course": 2, 
+		"max_submissions": 0, 
+		"start_date": "2012-02-13 22:21:03", 
+		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true.<br> The password is testPassword"
+	}
+}, 
+
+{"pk": 4, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": false, 
+		"due_date": "2099-02-13 22:21:26", 
+		"test_file": "tests/9999/fall/CS000/lab999-TestLab/SimpleJUnitTest.java", 
+		"name": "lab002-TestNoPassword", 
+		"passkey": "", 
+		"course": 2, 
+		"max_submissions": 0, 
+		"start_date": "2012-02-13 22:21:03", 
+		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true."
+	}
+},
 
 {"pk": 1, 
 	"model": "collector.submission", 
