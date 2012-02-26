@@ -19,6 +19,10 @@ from django import forms
 from assignmentcollectorgrader.settings import MEDIA_ROOT
 from django.core.files.storage import Storage, FileSystemStorage
 from django.contrib.auth.models import User
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+
+import os
 
 # large changes, e.g. API changes, 
 # database changes (that require syncdb and database export/import)
@@ -31,7 +35,7 @@ MINOR_VERSION = 0
 ##################
 # Storage System #
 ##################
-class AssignmentFileStorage(FileSystemStorage):
+class AssignmentFileStorage(FileSystemStorage): # pragma: no cover
     def save(self, name, content):
         """
         Saves new content to the file specified by name. The content should be a
@@ -69,7 +73,7 @@ class Course(models.Model):
         #        'year': self.year,
         #        'term':self.term,
         #        'course_id':self.course_num,})
-        return "/{0}/{1}/{2}".format(self.year, self.term, self.course_num)
+        return "/{0}/{1}/{2}/".format(self.year, self.term, self.course_num)
     course_num = models.CharField("Course Number", max_length=8, help_text='For example: CS260.')
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
     description = models.TextField(blank=True, verbose_name='Course Description')
@@ -83,7 +87,7 @@ class GenericAssignment(models.Model):
     def testfileurl(self, filename):
         import os.path
         extension = os.path.splitext(filename)
-        return "tests/{0}/{1}/{2}/{3}/{4}".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
+        return "tests/{0}/{1}/{2}/{3}/{4}/".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
     
     def __unicode__(self):
         #return "{0}: {1}".format(self.course.__unicode__(), self.name)
@@ -112,7 +116,7 @@ class Assignment(GenericAssignment):
         #        'term':self.course.term,
         #        'course_id':self.course.course_num,
         #        'assn_name':self.name})
-        return "/{0}/{1}/{2}/{3}".format(self.course.year, self.course.term, self.course.course_num, self.name)
+        return "/{0}/{1}/{2}/{3}/".format(self.course.year, self.course.term, self.course.course_num, self.name)
     test_file = models.FileField(upload_to=GenericAssignment.testfileurl, storage=AssignmentFileStorage(), blank=True)
 
 class GenericSubmission(models.Model):
@@ -125,7 +129,7 @@ class GenericSubmission(models.Model):
         return "{0} {1}: {2} #{3}".format(self.last_name, self.first_name, self.assignment.__unicode__(), self.submission_number)
     
     assignment = models.ForeignKey(Assignment) ## TODO 2.0 must move to specific child model
-    course = models.ForeignKey(Course)
+    course = models.ForeignKey(Course) ## TODO 2.0 remove this because it is redundant
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
     submission_time = models.DateTimeField(auto_now_add=True)
@@ -147,7 +151,7 @@ class Submission(GenericSubmission):
         #        'course_id':self.assignment.course.course_num,
         #        'assn_name':self.assignment.name,
         #        'sub_id':self.id})
-        return "/{0}/{1}/{2}/{3}/submissions/{4}".format(self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.id)
+        return "/{0}/{1}/{2}/{3}/submissions/{4}/".format(self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.id)
     file = models.FileField(upload_to=GenericSubmission.fileurl)
     grade_log = models.FileField(blank=True, upload_to=GenericSubmission.fileurl)
     grade = models.CharField(max_length=100, blank=True)
@@ -190,7 +194,11 @@ class AssignmentAdminForm(forms.ModelForm):
             raise forms.ValidationError("Must be a Jar or a Java file")
         
         # Validate that uploaded JAR files are actually JAR files
-        if re.search(r'\.jar$', extension.lower()):
+        if '.jar' == extension.lower():
+            
+            if not zipfile.is_zipfile(tf):
+                raise forms.ValidationError("Corrupted JAR file. Please remake JAR file.")
+            
             try:
                 z = zipfile.ZipFile(tf)
                 z.testzip()
@@ -204,33 +212,36 @@ class SubmissionForm(forms.ModelForm):
     
     def clean_first_name(self):
         import re
-        return re.sub(r'[^a-z]', '', self.cleaned_data['first_name'].lower())
+        fn = re.sub(r'[^a-z\-]', '', self.cleaned_data['first_name'].lower())
+        if not re.match(r'\w+(\-\w+)?', fn):
+            raise forms.ValidationError("Your name must begin with a letter, and can only contain letters and -")
+        return fn
     
     def clean_last_name(self):
         import re
-        return re.sub(r'[^a-z]', '', self.cleaned_data['last_name'].lower())
+        ln = re.sub(r'[^a-z\-]', '', self.cleaned_data['last_name'].lower())
+        if not re.match(r'\w+(\-\w+)?', ln):
+            raise forms.ValidationError("Your name must begin with a letter, and can only contain letters and -")
+        return ln
     
     def clean_file(self):
         import zipfile, os.path
         
         f = self.cleaned_data['file']
         
-        # Verify that the uploaded is a JAR based on magical numbers
-        try:
-            z = zipfile.ZipFile(f)
-            z.testzip()
-        except(zipfile.BadZipfile):
-            raise forms.ValidationError("Must be a JAR file.")
-        #print f.name or 'no name to print'
-        #if not zipfile.is_zipfile(f.name):
-        #z = zipfile.ZipFile(f)
-        #print z.testzip()
-        #if not z.testzip():
-        #    raise ValidationError("Must be a JAR file.")
-        
         # Verify File extension
         name, extension = os.path.splitext(f.name)
         if not extension.lower() == '.jar':
+            raise forms.ValidationError("Must have .jar extension")
+        
+        # Verify that the uploaded is a JAR based on magical numbers
+        if not zipfile.is_zipfile(f):
+            raise forms.ValidationError("Must be a JAR file.")
+        
+        try:
+            z = zipfile.ZipFile(f)
+            z.testzip()
+        except zipfile.BadZipfile:
             raise forms.ValidationError("Must be a JAR file.")
 
         return f
@@ -247,15 +258,34 @@ class SubmissionFormP(SubmissionForm):
         #    raise forms.ValidationError("No Submission instance supplied to this form. Tell a programmer.")
         
         # If the passkey field is specified
-        if 'passkey' in self.cleaned_data:
+        if 'passkey' in self.cleaned_data:      # pragma: no branch
             p = self.cleaned_data['passkey']
             # First test if the passkey is the assignment passkey
             if (p != self.instance.assignment.passkey):
                 # Then test if the passkey is the course passkey
                 if (p != self.instance.course.passkey):
-                    # If niether course nor assignment passkey, display an error
+                    # If neither course nor assignment passkey, display an error
                     self._errors["passkey"] = self.error_class(["The passkey is incorrect."])
         return self.cleaned_data
     
     class Meta(SubmissionForm.Meta):
         fields = ('first_name', 'last_name', 'passkey', 'file')
+        
+        
+###########################
+###   Signal Handlers   ###
+###########################
+
+@receiver(pre_delete, sender=Submission)
+def delete_submission_files(sender, **kwargs):
+    try:
+        if kwargs['instance'].file:
+            kwargs['instance'].file.delete()
+        
+        if kwargs['instance'].grade_log:
+            kwargs['instance'].grade_log.delete()
+    
+    except WindowsError as (winerror, strerror):        # pragma: no cover
+        print "Error in delete_submission_files: ", winerror, strerror
+    except OSError:                                     # pragma: no cover
+        print "Error in delete_submission_files"
