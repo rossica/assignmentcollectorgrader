@@ -22,7 +22,7 @@ from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from collector.models import *
 from assignmentcollectorgrader.settings import PROJECT_ROOT
-import random, re, datetime
+import random, re, datetime, shutil, os
 
 class ScenarioTests(TestCase):
     fixtures = ['collector.json']
@@ -34,10 +34,57 @@ class ScenarioTests(TestCase):
     def tearDown(self):
         pass
     
+    """
+    """
+    def test_view_about(self):
+        cli = Client()
+        
+        response = cli.get('/about/')
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200, "Non-success HTTP status")
+        
+        self.assertRegexpMatches(response.content, r'Version.*?{0}\.{1}'.format(MAJOR_VERSION, MINOR_VERSION))
+    
+    
+    """
+    """
+    def test_view_course_index(self):
+        courses = Course.objects.all()
+        cli = Client()
+        
+        response = cli.get('/')
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200, "Non-success HTTP status")
+        
+        #Check the text of the page for course numbers
+        #Make sure URLs exist for each course
+        for c in courses:
+            self.assertRegexpMatches(response.content, '{0}\s+{1}'.format(c.course_num, c.course_title), "Course_num not found")
+            self.assertRegexpMatches(response.content, r'href=\"{0}\"'.format(c.get_absolute_url()), "Incorrect absolute URL returned by Course " + str(c))
+
+    """
+    """
+    def test_view_specific_term_course_index(self):
+        cli = Client()
+        course = Course.objects.get(pk=1)
+        
+        response = cli.get('/{0}/{1}'.format(course.year, course.term), follow=True)
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200, "Non-success HTTP status")
+        
+        #Verify the course object is listed in this page
+        self.assertRegexpMatches(response.content, '{0}\s+{1}'.format(course.course_num, course.course_title), "Course_num not found")
+        self.assertRegexpMatches(response.content, r'href=\"{0}\"'.format(course.get_absolute_url()), "Incorrect absolute URL returned by Course " + str(course))
+
+    """
+    """
     def test_view_course(self):
         course = Course.objects.get(pk=1)
         c = Client()
-        response = c.get('/{0}/{1}/{2}'.format(course.year, course.term, course.course_num), follow=True)
+        response = c.get(course.get_absolute_url(), follow=True)
         
         #verify the response is a success
         self.assertEqual(response.status_code, 200)
@@ -51,26 +98,628 @@ class ScenarioTests(TestCase):
         #Check to make sure all assignments are listed by name, at least
         for assn in course.assignment_set.all():
             self.assertRegexpMatches(response.content, '{0}'.format(assn.name))
-            
+    """
+    """    
     def test_view_assignment(self):
         assn = Assignment.objects.get(pk=1)
         cli = Client()
-        response = cli.get('/{0}/{1}/{2}/{3}/'.format(assn.course.year, assn.course.term, assn.course.course_num, assn.name),  follow=True)
+        response = cli.get(assn.get_absolute_url(),  follow=True)
         
         #Verify the response is a success
         self.assertEqual(response.status_code, 200)
         
         #verify the Assignment name is listed somewhere
-        self.assertRegexpMatches(response.content, "lab999-TestLab<br>")
+        self.assertRegexpMatches(response.content, "{0}<br>".format(assn.name))
         
         #Verify the form submit link is correct
-        self.assertRegexpMatches(response.content, r'action="/{0}/{1}/{2}/{3}/submit/"'.format(assn.course.year, assn.course.term, assn.course.course_num, assn.name))
+        self.assertRegexpMatches(response.content, r'action="{0}submit/"'.format(assn.get_absolute_url()))
         
         #verify the parameters of the form are displayed: first name, last name, and file
         self.assertRegexpMatches(response.content, r'id="id_first_name" type="text" name="first_name"')
         self.assertRegexpMatches(response.content, r'id="id_last_name" type="text" name="last_name"')
         self.assertRegexpMatches(response.content, r'type="file" name="file" id="id_file"')
+    
+    """
+    """
+    def test_view_assignment_early(self):
+        assn = Assignment.objects.get(pk=8)
+        cli = Client()
+        response = cli.get(assn.get_absolute_url(),  follow=True)
         
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #verify the Assignment name is listed somewhere
+        self.assertRegexpMatches(response.content, "{0}<br>".format(assn.name))
+        
+        self.assertRegexpMatches(response.content, r'(?s)(?!<form.+?>.+?</form>)', "Found a submission form when there shouldn't be one")
+    
+    """
+    """
+    def test_view_assignment_late(self):
+        assn = Assignment.objects.get(pk=6)
+        cli = Client()
+        response = cli.get(assn.get_absolute_url(),  follow=True)
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #verify the Assignment name is listed somewhere
+        self.assertRegexpMatches(response.content, "{0}<br>".format(assn.name))
+        
+        self.assertRegexpMatches(response.content, r'(?s)(?!<form.+?>.+?</form>)', "Found a submission form when there shouldn't be one")
+
+    """
+    """
+    def test_view_assignment_password(self):
+        assn = Assignment.objects.get(pk=2)
+        cli = Client()
+        response = cli.get(assn.get_absolute_url(),  follow=True)
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify a form is shown
+        self.assertRegexpMatches(response.content, r'(?s)<form.+?>.+?</form>', "Didn't find a submission form when there should be one")
+        
+        #Verify the parameters of the form are displayed: first name, last name, file, and passkey
+        self.assertRegexpMatches(response.content, r'id="id_first_name" type="text" name="first_name"')
+        self.assertRegexpMatches(response.content, r'id="id_last_name" type="text" name="last_name"')
+        self.assertRegexpMatches(response.content, r'type="file" name="file" id="id_file"')
+        self.assertRegexpMatches(response.content, r'id="id_passkey" type="text" name="passkey"')
+
+    """
+    """
+    def test_view_assignment_course_password(self):
+        assn = Assignment.objects.get(pk=4)
+        cli = Client()
+        response = cli.get(assn.get_absolute_url(),  follow=True)
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify a form is shown
+        self.assertRegexpMatches(response.content, r'(?s)<form.+?>.+?</form>', "Didn't find a submission form when there should be one")
+        
+        #Verify the parameters of the form are displayed: first name, last name, file, and passkey
+        self.assertRegexpMatches(response.content, r'id="id_first_name" type="text" name="first_name"')
+        self.assertRegexpMatches(response.content, r'id="id_last_name" type="text" name="last_name"')
+        self.assertRegexpMatches(response.content, r'type="file" name="file" id="id_file"')
+        self.assertRegexpMatches(response.content, r'id="id_passkey" type="text" name="passkey"')
+
+    """
+    """
+    def test_view_submission(self):
+        s = Submission.objects.get(pk=1)
+        cli = Client()
+        response = cli.get(s.get_absolute_url())
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify the link back to this page is available
+        self.assertRegexpMatches(response.content, r'href={0}'.format(s.get_absolute_url()))
+        
+        #Verify the grade is displayed
+        self.assertRegexpMatches(response.content, r'Grade:.*?{0}'.format(s.grade))
+        
+        #Verify the name is displayed
+        self.assertRegexpMatches(response.content, r'Submitted by {0} {1}'.format(s.first_name, s.last_name))
+
+    """
+    """
+    def test_view_submission_no_grade_log(self):
+        s = Submission.objects.get(pk=2)
+        assn = s.assignment
+        cli = Client()
+        response = cli.get(s.get_absolute_url())
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify the link back to this page is available
+        self.assertRegexpMatches(response.content, r'href={0}'.format(s.get_absolute_url()))
+        
+        #Verify the grade is displayed
+        self.assertRegexpMatches(response.content, r'Grade:.*?{0}'.format(s.grade))
+        
+        #Verify the name is displayed
+        self.assertRegexpMatches(response.content, r'Submitted by {0} {1}'.format(s.first_name, s.last_name))
+        
+        #Verify the gradelog is not displayed and a message telling the user is
+        self.assertRegexpMatches(response.content, r'No grade results to display.',)
+
+    """
+    """
+    def test_view_submission_large_grade_log(self):
+        cli = Client()
+        s = Submission.objects.get(pk=3)
+        
+        response = cli.get(s.get_absolute_url())
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify the link back to this page is available
+        self.assertRegexpMatches(response.content, r'href={0}'.format(s.get_absolute_url()))
+        
+        #Verify the grade is displayed
+        self.assertRegexpMatches(response.content, r'Grade:.*?{0}'.format(s.grade))
+        
+        #Verify the name is displayed
+        self.assertRegexpMatches(response.content, r'Submitted by {0} {1}'.format(s.first_name, s.last_name))
+        
+        #Verify the gradelog is truncated and a message telling the user is diplayed
+        self.assertRegexpMatches(response.content, r'Grade results too long, truncating',)
+
+    """
+    """
+    def test_submit_assignment_late_not_allowed(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=6)
+        self.f = open(PROJECT_ROOT+'/testdata/EmptyJar.jar', 'rb')
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify the submission is rejected
+        self.assertRegexpMatches(response.content, r'It is past the due date and late assignments are not accepted. Sorry. :\(', "Submission was not rejected")
+    
+    """
+    """
+    def test_submit_assignment_late_allowed(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=9)
+        self.f = open(PROJECT_ROOT+'/testdata/SimpleClass.jar', 'rb')
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify that we inform the user they are turning in late.
+        self.assertRegexpMatches(response.content, r'You are turning in this assignment past the due date. But it will be accepted anyway. :\)')
+        
+        #Delete the submission created for this test
+        Submission.objects.filter(assignment__pk=a.id).delete()
+    
+    """
+    """
+    def test_submit_assignment_max_submissions_reached(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=5)
+        
+        self.f = open(PROJECT_ROOT+'/testdata/EmptyJar.jar', 'rb')
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify we inform the user they have reached maximum number of submissions
+        self.assertRegexpMatches(response.content, r'I&#39;m sorry, but you&#39;ve reached the maximum number of attempts.')
+    
+    """
+    """
+    def test_submit_assignment_GET(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=1)
+        
+        response = cli.get("{0}submit/".format(a.get_absolute_url()), follow=True)
+        
+        #Verify the client redirected in the past
+        self.assertRedirects(response, a.get_absolute_url())
+        
+        #verify the Assignment name is listed somewhere
+        self.assertRegexpMatches(response.content, "{0}<br>".format(a.name))
+        
+        #Verify the form submit link is correct
+        self.assertRegexpMatches(response.content, r'action="{0}submit/"'.format(a.get_absolute_url()))
+
+    """
+    """
+    def test_submit_assignment_early(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=8)
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':"asdfasdfasdfasdf"
+                  })
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Inform the user that submission is not available for this assignment yet
+        self.assertRegexpMatches(response.content, r'Submission has not opened for this assignment. Please wait until the assignment is available to submit your code')
+    
+    """
+    """
+    def test_submit_assignment_invalid_form(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=1)
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':"asdfasdfasdfasdf"
+                  })
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify that form errors are returned to the user
+        self.assertRegexpMatches(response.content, r'<ul class="errorlist"><li>This field is required.</li></ul>', "Did not produce error")
+    
+    """
+    """
+    def test_submit_assignment_no_test_file(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=10)
+        
+        f = open(PROJECT_ROOT+'/testdata/EmptyJar.jar', 'rb')
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':f
+                  })
+        f.close()
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Not really certain how to test this.
+        
+        #Clean up after the test
+        Submission.objects.get(assignment__pk=a.id).delete()
+    
+    """
+    """
+    def test_submit_assignment_password(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=2)
+        
+        f = open(PROJECT_ROOT+'/testdata/SimpleClass.jar', 'rb')
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'passkey':a.passkey,
+                  'file':f
+                  })
+        f.close()
+        
+        #Verify the response is a success
+        self.assertEqual(response.status_code, 200)
+        
+        #Verify that we don't have an error for bad password
+        self.assertRegexpMatches(response.content, r'(?!The passkey is incorrect)')
+        
+        #Clean up after the test
+        Submission.objects.get(assignment__pk=a.id).delete()
+    
+        
+"""
+These tests verify that the various states the grader can be in are covered and handled.
+When the grader is moved to its own app, these tests will still remain here, but will
+also serve as basis for the tests written for the grader.
+"""
+class GraderTests(TestCase):
+    fixtures = ['collector.json']
+    longMessage = True
+    def setUp(self):
+        pass
+    def tearDown(self):
+        #self.f.close() # always close files, regardless of success or failure
+        #shutil.rmtree(,ignore_errors=True)
+        Submission.objects.filter(pk__gt=3).delete() # delete the files from the disk too
+
+    """
+    Catch the case where there are no files to compile
+    """
+    def test_compile_failure_no_src(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=1)
+        c = a.course
+        self.f = open(PROJECT_ROOT+'/testdata/EmptyJar.jar', 'rb')
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message
+        self.assertRegexpMatches(response.content, r'\d+\s+error(s)?', "Didn't produce compiler errors")
+
+    """
+    Test the case where there is a syntax error in the student-uploaded file
+    """
+    def test_compile_failure_syntax_error(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=1)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/SyntaxError.jar", 'rb')
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message
+        self.assertRegexpMatches(response.content, r'\d+\s+error(s)?', "Didn't produce compiler errors")
+
+    """
+    Test compilation still fails because we are deleting .class files and there are no source files
+    """
+    def test_compile_failure_only_class_files(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=1)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/ClassFileOnly.jar", 'rb')
+        
+        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message
+        self.assertRegexpMatches(response.content, r'\d+\s+error(s)?', "Didn't produce compiler errors")
+
+    """
+    Test that the watchdog timer kicks in after 30 seconds
+    """
+    def test_watchdog_timer(self):
+        #self.skipTest("Long test, need to move to its own queue")
+        cli = Client()
+        a = Assignment.objects.get(pk=1)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/WatchdogTimer.jar", 'rb')
+        
+        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message
+        self.assertRegexpMatches(response.content, r'Possible infinite loop\?', "Didn't hit watchdog timer")
+
+    """
+    Test that we handle code exceptions gracefully
+    """
+    @unittest.expectedFailure
+    def test_junit_exception(self):
+        #self.skipTest("Need to figure out how to throw this specific error.")
+        cli = Client()
+        a = Assignment.objects.get(pk=1)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/Exception.jar", 'rb')
+        
+        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message
+        self.assertRegexpMatches(response.content, r'Exception\s+in\s+thread\s+\"main\"', "Didn't produce exception errors")
+
+    """
+    Test picking up more than one test case failure
+    """
+    def test_junit_failures(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=7)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/ThreeTestFailures.jar", 'rb')
+        
+        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message shield 
+        self.assertRegexpMatches(response.content, r'Failures:\s+2', "Didn't produce multiple failures")
+
+    """
+    Test picking up a single test case failure
+    """
+    def test_junit_failure(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=7)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/ThreeTestFailure.jar", 'rb')
+        
+        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message shield 
+        self.assertRegexpMatches(response.content, r'Failures:\s+1', "Didn't produce a single failure")
+
+    """
+    Test multiple test case errors
+    """
+    def test_junit_errors(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=7)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/ThreeTestErrors.jar", 'rb')
+        
+        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message shield 
+        self.assertRegexpMatches(response.content, r'Errors:\s+2', "Didn't produce multiple errors")
+
+    """
+    Test a single test case error
+    """
+    def test_junit_error(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=7)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/ThreeTestError.jar", 'rb')
+        
+        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message shield 
+        self.assertRegexpMatches(response.content, r'Errors:\s+1', "Didn't produce a single error")
+
+    """
+    """
+    def test_junit_one_of_each_type(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=7)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/ThreeTestOneOfEach.jar", 'rb')
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message shield 
+        self.assertRegexpMatches(response.content, r'Errors:\s+1', "Didn't produce a single error")
+        
+        # verify the correct error message shield 
+        self.assertRegexpMatches(response.content, r'Failures:\s+1', "Didn't produce a single failure")
+       
+        self.assertRegexpMatches(response.content, r'Tests\s+run:\s+3', "Didn't run 3 tests")
+    
+    """
+    Test a single test case that passes (no failures)
+    """
+    def test_junit_single_pass(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=1)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/SimpleClass.jar", 'rb')
+        
+        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message shield 
+        self.assertRegexpMatches(response.content, r'OK\s+\(1\s+test\)', "Didn't pass a single test")
+
+    """
+    Test multiple passing test cases with no failures
+    """
+    def test_junit_multiple_pass(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=7)
+        c = a.course
+        self.f = open(PROJECT_ROOT + "/testdata/ThreeTestClass.jar", 'rb')
+        
+        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message shield 
+        self.assertRegexpMatches(response.content, r'OK\s+\(3\s+tests\)', "Didn't pass all three tests")
+
+    def test_generate_large_grade_log(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=7)
+        c = a.course
+        self.f = open(PROJECT_ROOT+'/testdata/GenerateLargeGradeLog.jar', 'rb')
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message shield 
+        self.assertRegexpMatches(response.content, r'Grade results too long, truncating', "Didn't truncate grade log")
 
 
 """
@@ -145,7 +794,7 @@ class CourseFormTests(TestCase):
 These tests verify that the assignment form validation is functioning properly,
 both by rejecting invalid inputs, and by accepting valid inputs.
 """
-class AssignmentFormsTest(TestCase):
+class AssignmentFormTests(TestCase):
     fixtures = ['collector.json']
     longMessage=True
     def setUp(self): 
@@ -191,7 +840,7 @@ class AssignmentFormsTest(TestCase):
     """
     def test_valid_jar(self):
         #Try again with a valid Jar file uploaded
-        f = open(PROJECT_ROOT+"/testdata/SimpleJUnitTest.jar")
+        f = open(PROJECT_ROOT+"/testdata/SimpleJUnitTest.jar", 'rb')
         file_data= {
                     'test_file': SimpleUploadedFile('SimpleJUnitTest.jar', f.read())
                     }
@@ -207,9 +856,9 @@ class AssignmentFormsTest(TestCase):
     """
     def test_invalid_name(self):
         #Now generate a bad assignment name and see if we catch that
-        name = ''.join(random.sample("aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_", random.randint(0,25)))
+        name = ''.join(random.sample("aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_!@#$%^&*()", random.randint(0,25)))
         while re.match(r'^[a-zA-Z][\w\-]{,24}$', name):
-            name = ''.join(random.sample("aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_", random.randint(0,25)))
+            name = ''.join(random.sample("aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_!@#$%^&*()", random.randint(0,25)))
         self.data['name'] = name
         
         file_data = {
@@ -226,7 +875,7 @@ class AssignmentFormsTest(TestCase):
     """
     def test_invalid_jar(self):
         # Generate a bad JAR file and see if we catch that
-        f = open(PROJECT_ROOT+"/testdata/FakeJarFile.jar")
+        f = open(PROJECT_ROOT+"/testdata/FakeJarFile.jar", 'rb')
         file_data = {
                      'test_file': SimpleUploadedFile('FakeJarFile.jar', f.read())
                      }
@@ -262,11 +911,21 @@ class AssignmentFormsTest(TestCase):
         asgnmt_form = AssignmentAdminForm(self.data, file_data)
         
         self.assertFalse(asgnmt_form.is_valid(), "Failed to catch no file extension")
+        
+    """
+    Verify that we provide an error when there is no test file
+    """
+    def test_no_test_file(self):
+        asgnmt_form = AssignmentAdminForm(self.data)
+        
+        self.assertFalse(asgnmt_form.is_valid(), "Validated a form with no test file")
+        
+        self.assertIn(u"This assignment must include a JUnit test script.", asgnmt_form.errors['test_file'])
 
 """
 These tests validate the operation of submission forms.
 """
-class SubmissionFormsTest(TestCase):
+class SubmissionFormTests(TestCase):
     fixtures = ['collector.json']
     longMessage = True
     def setUp(self):
@@ -274,7 +933,7 @@ class SubmissionFormsTest(TestCase):
                      'first_name': ''.join(random.sample("abcdefghijklmnopqrstuvwxyz", random.randint(1,25))),
                      'last_name': ''.join(random.sample("abcdefghijklmnopqrstuvwxyz", random.randint(1,25)))
                      }
-        f = open(PROJECT_ROOT+'/testdata/SimpleClass.jar')
+        f = open(PROJECT_ROOT+'/testdata/SimpleClass.jar', 'rb')
         self.file_data= {
                          'file': SimpleUploadedFile('SimpleClass.jar', f.read())
                          }
@@ -300,9 +959,11 @@ class SubmissionFormsTest(TestCase):
     Don't accept invalid jar files
     """
     def test_invalid_jar(self):
+        f = open(PROJECT_ROOT+'/testdata/FakeJarFile.jar', 'rb')
         file_data = {
-                     'file': SimpleUploadedFile('FakeJar.jar', "ffffff")
+                     'file': SimpleUploadedFile('FakeJar.jar', f.read())
                      }
+        f.close()
         
         s = SubmissionForm(self.data, file_data)
         
@@ -348,8 +1009,8 @@ class SubmissionFormsTest(TestCase):
     Verify that names with symbols and letters are properly cleaned
     """
     def test_name_cleaning(self):
-        self.data['first_name'] = ''.join(random.sample(" abcdefghijklmnopqrstuvwxyz`~!@#$56789", random.randint(1,25)))
-        self.data['last_name'] = ''.join(random.sample(" abcdefghijklmnopqrstuvwxyz`~!@#$%56789", random.randint(1,25)))
+        self.data['first_name'] = random.choice("abcdefghijklmnopqrstuvwxyz").join(random.sample(" abcdefghijklmnopqrstuvwxyz`~!@#$%^&*0123456789", random.randint(2,12)))
+        self.data['last_name'] = random.choice("abcdefghijklmnopqrstuvwxyz").join(random.sample(" abcdefghijklmnopqrstuvwxyz`~!@#$%^&*0123456789", random.randint(2,12)))
         
         s = SubmissionForm(self.data, self.file_data)
         
@@ -358,9 +1019,12 @@ class SubmissionFormsTest(TestCase):
                             first name: {0}
                             last name:  {1}
                         """.format(self.data['first_name'], self.data['last_name']))
-        
-        self.assertEqual(s.cleaned_data['first_name'], re.sub(r'[^a-z]', '',self.data['first_name']))
-        self.assertEqual(s.cleaned_data['last_name'], re.sub(r'[^a-z]', '',self.data['last_name']))
+        fn = re.sub(r'[^a-z\-]', '', self.data['first_name'])
+        ln = re.sub(r'[^a-z\-]', '', self.data['last_name'])
+        self.assertEqual(s.cleaned_data['first_name'], fn, "Didn't clean first name")
+        self.assertEqual(s.cleaned_data['last_name'], ln, "Didn't clean last name")
+        self.assertIsNotNone(re.match(r'\w+(\-\w+)?', fn), "First name doesn't begin/end with a letter or has more than one hyphen")
+        self.assertIsNotNone(re.match(r'\w+(\-\w+)?', ln), "last name doesn't begin/end with a letter or has more than one hyphen")
     
     """
     Put the course password on the form and validate
@@ -418,3 +1082,40 @@ class SubmissionFormsTest(TestCase):
         
         self.assertTrue(sfp.is_valid(), "Did not validate course password")
         
+    """
+    Put the course password on the form, see if validation still succeeds
+    """   
+    def test_invalid_password(self):
+        a = Assignment.objects.get(pk=3) # get the assignment object with a password
+        c = Course.objects.get(pk=2) # get the course object with a password
+        s = Submission(assignment=a, course=c)
+        
+        self.data['passkey'] = 'c.passkey' # set the password to something false
+        
+        sfp = SubmissionFormP(self.data, self.file_data, instance=s)
+        
+        self.assertFalse(sfp.is_valid(), "Should not validate either password")
+
+class MiscTests(TestCase):
+    longMessage = True
+    fixtures = ['collector.json']
+    def setUp(self):
+        pass
+    def tearDown(self):
+        pass
+    
+    """
+    """
+    @unittest.expectedFailure
+    def test_display_grades(self):
+        from collector.admin import AssignmentAdmin
+        admin = AssignmentAdmin(Assignment, None)
+        a = Assignment.objects.get(pk=1)
+        
+        response = admin.display_grades(None, Assignment.objects.filter(pk=1))
+        
+        if datetime.datetime.now() < a.due_date:
+            self.assertRegexpMatches(response.__str__(), r'These grades are preliminary\. The assignment is not due yet\.',)
+        
+        s = a.submission_set.latest('submission_time')
+        self.assertRegexpMatches(response.__str__(), s.grade, "Didn't find grade listed")
