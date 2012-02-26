@@ -12,3 +12,5 @@ syntax: regexp
 ^media$
 ^test(\d)?$
 ^junit482$
+^trace
+^htmlcov

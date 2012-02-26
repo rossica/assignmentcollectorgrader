@@ -84,7 +84,97 @@
 		"start_date": "2012-02-13 22:21:03", 
 		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true."
 	}
-},
+}, 
+
+{"pk": 5, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": false, 
+		"due_date": "2099-02-13 22:21:26", 
+		"test_file": "tests/9999/fall/CS000/lab999-TestLab/SimpleJUnitTest.java", 
+		"name": "lab003-OneTry", 
+		"passkey": "", 
+		"course": 1, 
+		"max_submissions": 1, 
+		"start_date": "2012-02-13 22:21:03", 
+		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true."
+	}
+}, 
+
+{"pk": 6, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": false, 
+		"due_date": "2012-02-13 22:22:03", 
+		"test_file": "tests/9999/fall/CS000/lab999-TestLab/SimpleJUnitTest.java", 
+		"name": "lab004-AlwaysLate", 
+		"passkey": "", 
+		"course": 1, 
+		"max_submissions": 1, 
+		"start_date": "2012-02-13 22:21:03", 
+		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true."
+	}
+}, 
+
+{"pk": 7, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": false, 
+		"due_date": "2099-02-13 22:22:03", 
+		"test_file": "ThreeJUnitTests.jar", 
+		"name": "lab005-ThreeTests", 
+		"passkey": "", 
+		"course": 1, 
+		"max_submissions": 1, 
+		"start_date": "2012-02-13 22:21:03", 
+		"instructions": "write a ThreeTestClass that has three methods named alwaysTrue, alwaysFalse, and returnInt that takes no parameters and always returns true, take no parameter and always returns false, and takes in an int and returns the same int."
+	}
+}, 
+
+{"pk": 8, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": false, 
+		"due_date": "2099-02-13 22:22:03", 
+		"test_file": "SimpleJUnitTest.java", 
+		"name": "lab006-AlwaysEarly", 
+		"passkey": "", 
+		"course": 1, 
+		"max_submissions": 1, 
+		"start_date": "2099-02-13 22:21:03", 
+		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true."
+	}
+}, 
+
+{"pk": 9, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": true, 
+		"due_date": "2012-02-13 22:22:03", 
+		"test_file": "SimpleJUnitTest.java", 
+		"name": "lab007-AllowedLate", 
+		"passkey": "", 
+		"course": 1, 
+		"max_submissions": 0, 
+		"start_date": "2012-02-13 22:21:03", 
+		"instructions": "write a SimpleClass that has a single method named alwaysTrue that takes no parameters and always returns true."
+	}
+}, 
+
+{"pk": 10, 
+	"model": "collector.assignment", 
+	"fields": {
+		"allow_late": true, 
+		"due_date": "2099-02-13 22:22:03", 
+		"test_file": "", 
+		"name": "lab008-NoTest", 
+		"passkey": "", 
+		"course": 1, 
+		"max_submissions": 0, 
+		"start_date": "2012-02-13 22:21:03", 
+		"instructions": "Just turn your files in here. There is no automated testing"
+	}
+}, 
 
 {"pk": 1, 
 	"model": "collector.submission", 
@@ -97,6 +187,36 @@
 		"course": 1, 
 		"submission_number": 1, 
 		"file": "submissions/9999/fall/CS000/lab999-TestLab/test_tester_1.jar", 
+		"submission_time": "2012-02-13 22:53:18"
+	}
+}, 
+
+{"pk": 2, 
+	"model": "collector.submission", 
+	"fields": {
+		"first_name": "tester", 
+		"last_name": "test", 
+		"grade_log": "", 
+		"grade": "1/1", 
+		"assignment": 5, 
+		"course": 1, 
+		"submission_number": 1, 
+		"file": "", 
+		"submission_time": "2012-02-13 22:53:18"
+	}
+}, 
+
+{"pk": 3, 
+	"model": "collector.submission", 
+	"fields": {
+		"first_name": "tester", 
+		"last_name": "tester", 
+		"grade_log": "LargeGradeLog.log", 
+		"grade": "0/1", 
+		"assignment": 1, 
+		"course": 1, 
+		"submission_number": 2, 
+		"file": "", 
 		"submission_time": "2012-02-13 22:53:18"
 	}
 }
