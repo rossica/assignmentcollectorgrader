@@ -249,7 +249,7 @@ class ScenarioTests(TestCase):
         #Verify the name is displayed
         self.assertRegexpMatches(response.content, r'Submitted by {0} {1}'.format(s.first_name, s.last_name))
         
-        #Verify the gradelog is truncated and a message telling the user is diplayed
+        #Verify the gradelog is truncated and a message telling the user is displayed
         self.assertRegexpMatches(response.content, r'Grade results too long, truncating',)
 
     """
@@ -424,6 +424,7 @@ also serve as basis for the tests written for the grader.
 class GraderTests(TestCase):
     fixtures = ['collector.json']
     longMessage = True
+    unable_to_parse_regex = re.compile(r'Grade[^A-Z]+Unable to parse grade\.')
     def setUp(self):
         pass
     def tearDown(self):
@@ -437,7 +438,6 @@ class GraderTests(TestCase):
     def test_compile_failure_no_src(self):
         cli = Client()
         a = Assignment.objects.get(pk=1)
-        c = a.course
         self.f = open(PROJECT_ROOT+'/testdata/EmptyJar.jar', 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -451,7 +451,12 @@ class GraderTests(TestCase):
         self.assertEqual(response.status_code, 200)
         
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'\d+\s+error(s)?', "Didn't produce compiler errors")
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+0 \(\d+ compiler errors\)', "Didn't produce compiler errors")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
 
     """
     Test the case where there is a syntax error in the student-uploaded file
@@ -459,7 +464,6 @@ class GraderTests(TestCase):
     def test_compile_failure_syntax_error(self):
         cli = Client()
         a = Assignment.objects.get(pk=1)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/SyntaxError.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -473,7 +477,12 @@ class GraderTests(TestCase):
         self.assertEqual(response.status_code, 200)
         
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'\d+\s+error(s)?', "Didn't produce compiler errors")
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+0 \(\d+ compiler errors\)', "Didn't produce compiler errors")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
 
     """
     Test compilation still fails because we are deleting .class files and there are no source files
@@ -481,10 +490,9 @@ class GraderTests(TestCase):
     def test_compile_failure_only_class_files(self):
         cli = Client()
         a = Assignment.objects.get(pk=1)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/ClassFileOnly.jar", 'rb')
         
-        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
                   'last_name':"test",
                   'file':self.f
@@ -495,7 +503,12 @@ class GraderTests(TestCase):
         self.assertEqual(response.status_code, 200)
         
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'\d+\s+error(s)?', "Didn't produce compiler errors")
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+0 \(\d+ compiler errors\)', "Didn't produce compiler errors")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
 
     """
     Test that the watchdog timer kicks in after 30 seconds
@@ -504,10 +517,9 @@ class GraderTests(TestCase):
         #self.skipTest("Long test, need to move to its own queue")
         cli = Client()
         a = Assignment.objects.get(pk=1)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/WatchdogTimer.jar", 'rb')
         
-        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
                   'last_name':"test",
                   'file':self.f
@@ -518,7 +530,12 @@ class GraderTests(TestCase):
         self.assertEqual(response.status_code, 200)
         
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'Possible infinite loop\?', "Didn't hit watchdog timer")
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+0 \(infinite loop\?\)', "Didn't hit watchdog timer")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
 
     """
     Test that we handle code exceptions gracefully
@@ -528,10 +545,9 @@ class GraderTests(TestCase):
         #self.skipTest("Need to figure out how to throw this specific error.")
         cli = Client()
         a = Assignment.objects.get(pk=1)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/Exception.jar", 'rb')
         
-        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
                   'last_name':"test",
                   'file':self.f
@@ -541,8 +557,13 @@ class GraderTests(TestCase):
         # check the upload succeeded
         self.assertEqual(response.status_code, 200)
         
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
+        
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'Exception\s+in\s+thread\s+\"main\"', "Didn't produce exception errors")
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+0 \(Exception in thread "main"', "Didn't produce exception errors")
 
     """
     Test picking up more than one test case failure
@@ -550,10 +571,9 @@ class GraderTests(TestCase):
     def test_junit_failures(self):
         cli = Client()
         a = Assignment.objects.get(pk=7)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestFailures.jar", 'rb')
         
-        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
                   'last_name':"test",
                   'file':self.f
@@ -563,8 +583,16 @@ class GraderTests(TestCase):
         # check the upload succeeded
         self.assertEqual(response.status_code, 200)
         
-        # verify the correct error message shield 
+        # verify the failures occurred
         self.assertRegexpMatches(response.content, r'Failures:\s+2', "Didn't produce multiple failures")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
+            
+        #Verify the proper grade is given
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+/\d+', "Didn't grade properly")
 
     """
     Test picking up a single test case failure
@@ -572,10 +600,9 @@ class GraderTests(TestCase):
     def test_junit_failure(self):
         cli = Client()
         a = Assignment.objects.get(pk=7)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestFailure.jar", 'rb')
         
-        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
                   'last_name':"test",
                   'file':self.f
@@ -587,6 +614,14 @@ class GraderTests(TestCase):
         
         # verify the correct error message shield 
         self.assertRegexpMatches(response.content, r'Failures:\s+1', "Didn't produce a single failure")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
+            
+        #Verify the proper grade is given
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+/\d+', "Didn't grade properly")
 
     """
     Test multiple test case errors
@@ -594,10 +629,9 @@ class GraderTests(TestCase):
     def test_junit_errors(self):
         cli = Client()
         a = Assignment.objects.get(pk=7)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestErrors.jar", 'rb')
         
-        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
                   'last_name':"test",
                   'file':self.f
@@ -609,17 +643,24 @@ class GraderTests(TestCase):
         
         # verify the correct error message shield 
         self.assertRegexpMatches(response.content, r'Errors:\s+2', "Didn't produce multiple errors")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
+            
+        #Verify the proper grade is given
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+/\d+', "Didn't grade properly")
 
     """
-    Test a single test case error
+    Test a single test case error out of three tests
     """
     def test_junit_error(self):
         cli = Client()
         a = Assignment.objects.get(pk=7)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestError.jar", 'rb')
         
-        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
                   'last_name':"test",
                   'file':self.f
@@ -631,6 +672,42 @@ class GraderTests(TestCase):
         
         # verify the correct error message shield 
         self.assertRegexpMatches(response.content, r'Errors:\s+1', "Didn't produce a single error")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
+            
+        #Verify the proper grade is given
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+/\d+', "Didn't grade properly")
+    
+    """
+    """
+    def test_junit_one_error(self):
+        cli = Client()
+        a = Assignment.objects.get(pk=1)
+        self.f = open(PROJECT_ROOT + "/testdata/SingleError.jar", 'rb')
+        
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
+                 {'first_name':"tester",
+                  'last_name':"test",
+                  'file':self.f
+                  })
+        self.f.close()
+        
+        # check the upload succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # verify the correct error message
+        self.assertRegexpMatches(response.content, r'Errors:\s+1', "Didn't produce a single error")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
+            
+        #Verify the proper grade is given
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+/\d+', "Didn't grade properly")
 
     """
     """
@@ -657,6 +734,14 @@ class GraderTests(TestCase):
         self.assertRegexpMatches(response.content, r'Failures:\s+1', "Didn't produce a single failure")
        
         self.assertRegexpMatches(response.content, r'Tests\s+run:\s+3', "Didn't run 3 tests")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
+        
+        #Verify the proper grade is given
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+/\d+', "Didn't grade properly")
     
     """
     Test a single test case that passes (no failures)
@@ -664,10 +749,9 @@ class GraderTests(TestCase):
     def test_junit_single_pass(self):
         cli = Client()
         a = Assignment.objects.get(pk=1)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/SimpleClass.jar", 'rb')
         
-        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
                   'last_name':"test",
                   'file':self.f
@@ -679,6 +763,14 @@ class GraderTests(TestCase):
         
         # verify the correct error message shield 
         self.assertRegexpMatches(response.content, r'OK\s+\(1\s+test\)', "Didn't pass a single test")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
+        
+        #Verify the proper grade is given
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+/\d+', "Didn't grade properly")
 
     """
     Test multiple passing test cases with no failures
@@ -686,10 +778,9 @@ class GraderTests(TestCase):
     def test_junit_multiple_pass(self):
         cli = Client()
         a = Assignment.objects.get(pk=7)
-        c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestClass.jar", 'rb')
         
-        response = cli.post("/{0}/{1}/{2}/{3}/submit/".format(c.year, c.term, c.course_num, a.name),
+        response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
                   'last_name':"test",
                   'file':self.f
@@ -701,7 +792,17 @@ class GraderTests(TestCase):
         
         # verify the correct error message shield 
         self.assertRegexpMatches(response.content, r'OK\s+\(3\s+tests\)', "Didn't pass all three tests")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            print response.content
+            self.fail("Should have been able to parse grade.")
+            
+        #Verify the proper grade is given
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+/\d+', "Didn't grade properly")
 
+    """
+    """
     def test_generate_large_grade_log(self):
         cli = Client()
         a = Assignment.objects.get(pk=7)
@@ -720,6 +821,13 @@ class GraderTests(TestCase):
         
         # verify the correct error message shield 
         self.assertRegexpMatches(response.content, r'Grade results too long, truncating', "Didn't truncate grade log")
+        
+        #Should not be unable to parse the grade (should be able to parse the grade)
+        if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
+            self.fail("Should have been able to parse grade.")
+        
+        #Verify the proper grade is given
+        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+/\d+', "Didn't grade properly")
 
 
 """
@@ -754,7 +862,7 @@ class CourseFormTests(TestCase):
         for i in range(3):
             course_num += random.choice("0123456789")
         # decide whether to include a special letter at the end
-        if random.randint(0,1):
+        if random.randint(0,1):             #pragma: no branch
             course_num += random.choice("CDW")
                                
         self.data['course_num'] = course_num
@@ -774,7 +882,7 @@ class CourseFormTests(TestCase):
         # Now generate an invalid course number
         bad_course_num = ''.join(random.sample("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789CDW", random.randint(1,8)))
         
-        while re.match(r'^[A-Z]{1,4}\d{3}[CDW]?$', bad_course_num):
+        while re.match(r'^[A-Z]{1,4}\d{3}[CDW]?$', bad_course_num):             #pragma: no branch
             bad_course_num = ''.join(random.sample("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789CDW", random.randint(1,8)))
             
         self.data['course_num'] = bad_course_num
@@ -857,7 +965,7 @@ class AssignmentFormTests(TestCase):
     def test_invalid_name(self):
         #Now generate a bad assignment name and see if we catch that
         name = ''.join(random.sample("aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_!@#$%^&*()", random.randint(0,25)))
-        while re.match(r'^[a-zA-Z][\w\-]{,24}$', name):
+        while re.match(r'^[a-zA-Z][\w\-]{,24}$', name):             #pragma: no branch
             name = ''.join(random.sample("aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_!@#$%^&*()", random.randint(0,25)))
         self.data['name'] = name
         
