@@ -23,16 +23,12 @@ from django.core.urlresolvers import reverse
 from assignmentcollectorgrader.collector.models import *
 from assignmentcollectorgrader.settings import JUNIT_ROOT
 
-def render_to_csrf(request, template, context):
-    from django.core.context_processors import csrf
-    from django.shortcuts import render_to_response
-    c = {}
-    c.update(csrf(request))
-    try:
-        c.update(context)
-        return render_to_response(template, c)
-    except:
-        pass
+import os, os.path, re, shutil, subprocess, tempfile, datetime, time, zipfile
+
+#Watchdog timer maths
+WATCHDOG_WAIT_TIME = 30 # Total time in seconds the watchdog timer will wait
+WATCHDOG_POLL_TIME = 0.3 # how long to sleep between checking for subprocess completion
+WATCHDOG_ITERATIONS = WATCHDOG_WAIT_TIME / WATCHDOG_POLL_TIME # how many iterations the watchdog timer has
     
 
 def course_index(request):
@@ -48,7 +44,6 @@ def view_about(request):
 
 def view_course(request, year, term, course_id):
     course = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
-    import datetime
     # TODO: Only show assignments that have started before now() -- FIXED: can't submit to assignments that start before now
     assns = course.assignment_set.order_by('due_date').filter(due_date__gte=datetime.datetime.now())
     late = course.assignment_set.order_by('due_date').filter(due_date__lt=datetime.datetime.now())
@@ -57,7 +52,6 @@ def view_course(request, year, term, course_id):
 def view_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name) # where the course and assignment name uniquely id the assn
-    import datetime
 
     if datetime.datetime.now() < assn.start_date:
         form = None
@@ -72,7 +66,6 @@ def view_assignment(request, year, term, course_id, assn_name):
     return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form,})
 
 def view_submission(request, year, term, course_id, assn_name, sub_id):
-    import os
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
     sub = get_object_or_404(Submission, id=sub_id)
@@ -99,8 +92,6 @@ def view_submission(request, year, term, course_id, assn_name, sub_id):
 def submit_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
-    
-    import datetime
     
     if request.method == 'POST':
         s = Submission(assignment=assn, course=c)
@@ -166,7 +157,6 @@ def submit_assignment(request, year, term, course_id, assn_name):
     
 
 def _grader(assignment, submission):
-    import os, re, shutil, subprocess, tempfile, time, zipfile
     # create a temporary directory
     submission_dir, file = os.path.split(submission.file.path) # temporary fix for filling the temp directory
     temp = tempfile.mkdtemp(dir=submission_dir, suffix=submission.last_name) 
@@ -179,24 +169,13 @@ def _grader(assignment, submission):
     to_extract = []
     java_files = []
     for i in files:
-        if not re.search("(^/|/?\.\./|^META-INF)", i):
+        if not re.search("^/|/?\.\./|^META-INF|\.class$", i):
             to_extract.append(i)
             ## Add java files to their own list
             if re.search("\.java$", i):
                 java_files.append(i)
     ## extract legal files to the temporary directory
     jar.extractall(temp, to_extract) 
-    # delete all class files 
-    # Recursively deleting class files
-    for walk_root, walk_dirs, walk_files in os.walk(temp):
-        for name in walk_files:
-            if re.search("\.class$", name):
-                os.remove(os.path.join(walk_root, name))
-    #for i in os.listdir(temp):
-    ## find all class files
-    #    if re.search("\.class$", i):
-    ## delete them
-    #        os.remove(os.path.join(temp,i))
             
     # The extra-complicated manner copying is accomplished in is to assure case-sensitivity
     # On windows platforms, filename case is not maintained when stored on the filesystem.
@@ -209,7 +188,7 @@ def _grader(assignment, submission):
         java_files.append(grader_name)
     
     # if the grader is a JAR, extract the grader into the temporary dir
-    elif os.path.splitext(assignment.test_file.path.lower())[1] == '.jar':
+    elif os.path.splitext(assignment.test_file.path.lower())[1] == '.jar':      # pragma: no branch
         shutil.copy2(os.path.join(grader_path, grader_name), temp)
         
         grader_jar = zipfile.ZipFile(os.path.join(temp, grader_name))
@@ -249,7 +228,7 @@ def _grader(assignment, submission):
         output = submission.grade_log.read()
     ## Extract the grade information from the output
         #match = re.search(r'([1]) error|(\d+) errors', output)
-        match = re.search(r'^(\d+)\s+error', output, re.M)
+        match = re.search(r'^(\d+)\s+error(s)?', output, re.M)
         if match:
             submission.grade = "0 ({0} compiler errors)".format(match.group(1))
         else:
@@ -272,38 +251,36 @@ def _grader(assignment, submission):
         name, ext = os.path.splitext(os.path.basename(assignment.test_file.name))
         args2 = ['java', '-Xms32m', '-Xmx32m', 'junit.textui.TestRunner', name]
         java_proc = subprocess.Popen(args=args2, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp, )
-        ## Have a watchdog timer of 30 seconds in case of infinite loops in code.
+        ## Have a watchdog timer in case of infinite loops in code.
         itercount = 0
-        while java_proc.poll() is None and (itercount < 31):
+        while java_proc.poll() is None and (itercount <= WATCHDOG_ITERATIONS):
             itercount += 1
-            time.sleep(1)
-        ## If the code is still executing after 30 seconds, kill the process.
-        if itercount > 30:
+            time.sleep(WATCHDOG_POLL_TIME)
+        ## If the code is still executing after WATCHDOG_WAIT_TIME seconds, kill the process.
+        if itercount > WATCHDOG_ITERATIONS:
             java_proc.kill()
-            os.write(output_handle, "\nExecution took longer than {0} seconds, terminating test. Possible infinite loop?".format(itercount))
+            os.write(output_handle, "\nExecution took longer than {0} seconds, terminating test. Possible infinite loop?".format(WATCHDOG_WAIT_TIME))
         java = java_proc.returncode
     ## Save the test output to the submission
-        file = File(open(output_path))
+        file = File(open(output_path, 'rb'))
         submission.grade_log.save(os.path.basename(output_path), file, save=True)  
     ## read in the output
         output = ''
         if file.size < 2097152:
             output = submission.grade_log.read()
         else:
-            f = open(output_path)
-            f.seek(0)
-            output = f.read(100000)
+            file.seek(0)
+            output = file.read(100000)
             output +="\n=================================================================================="
             output +="\n Grade results too long, truncating.............................................\n"
             output +="==================================================================================\n"
-            f.seek(-100000, os.SEEK_END)
-            output += f.read(100000)
-            f.close()
+            file.seek(-100000, os.SEEK_END)
+            output += file.read(100000)
     ## Extract the grade information from the output
     ### If java returns with an error code
         if java != 0:
     ### First check for a JUnit failure
-            regex = r"^Tests\s+run:\s+(?P<total>\d+?),\s+Failures:\s+(?P<failures>\d+?),\s+Errors:\s+(?P<errors>\d+?)$"
+            regex = r"^Tests run: (?P<total>\d+?),\s+Failures: (?P<failures>\d+?),\s+Errors: (?P<errors>\d+?)"
             match = re.search(regex, output, re.M)
             if match:
                 results = match.groupdict()
@@ -326,7 +303,7 @@ def _grader(assignment, submission):
                         submission.grade = "Unable to parse grade. (See grade log for details)"
     ### If java runs just fine
         else:
-            regex = r"^OK\s+[(](?P<successful>\d+?)\s+test(s)?[)]$"
+            regex = r"OK\s+\((?P<successful>\d+?)\s+test(s)?\)"
             match = re.search(regex, output, re.M)
             if match:
                 results = match.groupdict()
