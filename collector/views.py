@@ -45,13 +45,13 @@ def view_about(request):
 def view_course(request, year, term, course_id):
     course = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     # TODO: Only show assignments that have started before now() -- FIXED: can't submit to assignments that start before now
-    assns = course.assignment_set.order_by('due_date').filter(due_date__gte=datetime.datetime.now())
-    late = course.assignment_set.order_by('due_date').filter(due_date__lt=datetime.datetime.now())
+    assns = course.javaassignment_set.order_by('due_date').filter(due_date__gte=datetime.datetime.now())
+    late = course.javaassignment_set.order_by('due_date').filter(due_date__lt=datetime.datetime.now())
     return render_to_response('collector/course.html', {'assignments':assns, 'late':late, 'course':course})
     
 def view_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
-    assn = get_object_or_404(Assignment, course=c.pk, name=assn_name) # where the course and assignment name uniquely id the assn
+    assn = get_object_or_404(JavaAssignment, course=c.pk, name=assn_name) # where the course and assignment name uniquely id the assn
 
     if datetime.datetime.now() < assn.start_date:
         form = None
@@ -60,15 +60,15 @@ def view_assignment(request, year, term, course_id, assn_name):
     else:
         # If there is no passkey, use a different form
         if assn.passkey == '' and c.passkey == '':
-            form = SubmissionForm()
+            form = JavaSubmissionForm()
         else:
-            form = SubmissionFormP()
+            form = JavaSubmissionFormP()
     return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form,})
 
 def view_submission(request, year, term, course_id, assn_name, sub_id):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
-    assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
-    sub = get_object_or_404(Submission, id=sub_id)
+    assn = get_object_or_404(JavaAssignment, course=c.pk, name=assn_name)
+    sub = get_object_or_404(JavaSubmission, id=sub_id)
     
     if sub.grade_log:
         if sub.grade_log.size < 2097152:
@@ -91,15 +91,15 @@ def view_submission(request, year, term, course_id, assn_name, sub_id):
 
 def submit_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
-    assn = get_object_or_404(Assignment, course=c.pk, name=assn_name)
+    assn = get_object_or_404(JavaAssignment, course=c.pk, name=assn_name)
     
     if request.method == 'POST':
-        s = Submission(assignment=assn, course=c)
+        s = JavaSubmission(assignment=assn)
         # Choose the right kind of form to perform validation
         if assn.passkey == '' and c.passkey == '':
-            form = SubmissionForm(request.POST, request.FILES, instance=s)
+            form = JavaSubmissionForm(request.POST, request.FILES, instance=s)
         else:
-            form = SubmissionFormP(request.POST, request.FILES, instance=s)
+            form = JavaSubmissionFormP(request.POST, request.FILES, instance=s)
         
         # If the user is trying to upload a submission before the assignment is available, inform them
         if datetime.datetime.now() < assn.start_date:
@@ -120,7 +120,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
         if form.is_valid():
 
             # Calculate which submission number this is
-            count = Submission.objects.filter(last_name=form.cleaned_data['last_name'], first_name=form.cleaned_data['first_name'], assignment=assn, ).count()
+            count = JavaSubmission.objects.filter(last_name=form.cleaned_data['last_name'], first_name=form.cleaned_data['first_name'], assignment=assn, ).count()
             if count > 0:
                 form.instance.submission_number = count + 1
             

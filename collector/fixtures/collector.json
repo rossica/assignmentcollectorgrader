@@ -26,7 +26,7 @@
 }, 
 
 {"pk": 1, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": false, 
 		"due_date": "2099-02-13 22:21:26", 
@@ -41,7 +41,7 @@
 }, 
 
 {"pk": 2, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": false, 
 		"due_date": "2099-02-13 22:21:26", 
@@ -57,7 +57,7 @@
 
 
 {"pk": 3, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": false, 
 		"due_date": "2099-02-13 22:21:26", 
@@ -72,7 +72,7 @@
 }, 
 
 {"pk": 4, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": false, 
 		"due_date": "2099-02-13 22:21:26", 
@@ -87,7 +87,7 @@
 }, 
 
 {"pk": 5, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": false, 
 		"due_date": "2099-02-13 22:21:26", 
@@ -102,7 +102,7 @@
 }, 
 
 {"pk": 6, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": false, 
 		"due_date": "2012-02-13 22:22:03", 
@@ -117,7 +117,7 @@
 }, 
 
 {"pk": 7, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": false, 
 		"due_date": "2099-02-13 22:22:03", 
@@ -132,7 +132,7 @@
 }, 
 
 {"pk": 8, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": false, 
 		"due_date": "2099-02-13 22:22:03", 
@@ -147,7 +147,7 @@
 }, 
 
 {"pk": 9, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": true, 
 		"due_date": "2012-02-13 22:22:03", 
@@ -162,7 +162,7 @@
 }, 
 
 {"pk": 10, 
-	"model": "collector.assignment", 
+	"model": "collector.javaassignment", 
 	"fields": {
 		"allow_late": true, 
 		"due_date": "2099-02-13 22:22:03", 
@@ -177,14 +177,13 @@
 }, 
 
 {"pk": 1, 
-	"model": "collector.submission", 
+	"model": "collector.javasubmission", 
 	"fields": {
 		"first_name": "tester", 
 		"last_name": "test", 
 		"grade_log": "submissions/9999/fall/CS000/lab999-TestLab/test_tester_1.log", 
 		"grade": "1/1", 
 		"assignment": 1, 
-		"course": 1, 
 		"submission_number": 1, 
 		"file": "submissions/9999/fall/CS000/lab999-TestLab/test_tester_1.jar", 
 		"submission_time": "2012-02-13 22:53:18"
@@ -192,14 +191,13 @@
 }, 
 
 {"pk": 2, 
-	"model": "collector.submission", 
+	"model": "collector.javasubmission", 
 	"fields": {
 		"first_name": "tester", 
 		"last_name": "test", 
 		"grade_log": "", 
 		"grade": "1/1", 
 		"assignment": 5, 
-		"course": 1, 
 		"submission_number": 1, 
 		"file": "", 
 		"submission_time": "2012-02-13 22:53:18"
@@ -207,14 +205,13 @@
 }, 
 
 {"pk": 3, 
-	"model": "collector.submission", 
+	"model": "collector.javasubmission", 
 	"fields": {
 		"first_name": "tester", 
 		"last_name": "tester", 
 		"grade_log": "LargeGradeLog.log", 
 		"grade": "0/1", 
 		"assignment": 1, 
-		"course": 1, 
 		"submission_number": 2, 
 		"file": "", 
 		"submission_time": "2012-02-13 22:53:18"

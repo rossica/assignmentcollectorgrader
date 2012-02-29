@@ -22,11 +22,11 @@ from django.contrib.auth.models import User
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 
-import os
+import os, os.path, re, zipfile
 
 # large changes, e.g. API changes, 
 # database changes (that require syncdb and database export/import)
-MAJOR_VERSION = 1 
+MAJOR_VERSION = 2 
 # feature development, bug fixes are rolled into feature enhancements
 # Security fixes do get their own version
 MINOR_VERSION = 0 
@@ -77,17 +77,22 @@ class Course(models.Model):
     course_num = models.CharField("Course Number", max_length=8, help_text='For example: CS260.')
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
     description = models.TextField(blank=True, verbose_name='Course Description')
-    passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access. Overridden by Assignment passkeys.')
+    passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access. Overridden by JavaAssignment passkeys.')
     year = models.IntegerField(default=2010, help_text='The year this course is offered.')
     term = models.CharField(max_length=6, choices=TERM_CHOICES, help_text='The term this course is offered.')
     email = models.EmailField("Email to send grades to", blank=True)
-    #creator = models.ForeignKey(User, default=1) ## TODO Milestone 2.0
+    creator = models.ForeignKey(User, default=1)
     
 class GenericAssignment(models.Model):
     def testfileurl(self, filename):
-        import os.path
         extension = os.path.splitext(filename)
         return "tests/{0}/{1}/{2}/{3}/{4}/".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
+    OPTIONS_CHOICES = (
+                       (0, 'None'),
+                       (1, 'Automated Grading'),
+                       (2, 'Plagiarism detection'),
+                       (3, 'Both')
+                       )
     
     def __unicode__(self):
         #return "{0}: {1}".format(self.course.__unicode__(), self.name)
@@ -101,13 +106,14 @@ class GenericAssignment(models.Model):
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access. Overrides any specified Course passkey.')
     max_submissions = models.IntegerField(default=0, help_text='Maximum allowed submissions per student. 0 for unlimited.')
     allow_late = models.BooleanField("Allow Late Submissions", default=False)
-    #creator = models.ForeignKey(User, default=1) ## TODO Milestone 2.0
+    creator = models.ForeignKey(User, default=1)
+    options = models.IntegerField(default=1, choices=OPTIONS_CHOICES)
     
     class Meta:
         abstract = True
         unique_together = ('course', 'name')
 
-class Assignment(GenericAssignment):
+class JavaAssignment(GenericAssignment):
     # TODO: 2.0 Rename to JARAssignment
     #@models.permalink
     def get_absolute_url(self):
@@ -118,20 +124,21 @@ class Assignment(GenericAssignment):
         #        'assn_name':self.name})
         return "/{0}/{1}/{2}/{3}/".format(self.course.year, self.course.term, self.course.course_num, self.name)
     test_file = models.FileField(upload_to=GenericAssignment.testfileurl, storage=AssignmentFileStorage(), blank=True)
+    java_cmd = models.CharField(max_length=100, default="-Xms32m -Xmx32m junit.textui.TestRunner")
 
 class GenericSubmission(models.Model):
     def fileurl(self, filename):
-        import os.path
         extension = os.path.splitext(filename)
         return "submissions/{0}/{1}/{2}/{3}/{4}_{5}_{6}{7}".format(self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.last_name, self.first_name, self.submission_number, extension[1])
     
     def __unicode__(self):
         return "{0} {1}: {2} #{3}".format(self.last_name, self.first_name, self.assignment.__unicode__(), self.submission_number)
     
-    assignment = models.ForeignKey(Assignment) ## TODO 2.0 must move to specific child model
-    course = models.ForeignKey(Course) ## TODO 2.0 remove this because it is redundant
+    #assignment = models.ForeignKey(JavaAssignment) ## TODO 2.0 must move to specific child model
+    #course = models.ForeignKey(Course) ## TODO 2.0 remove this because it is redundant
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
+    email = models.EmailField(blank=True)
     submission_time = models.DateTimeField(auto_now_add=True)
     submission_number = models.IntegerField(default=1)
     # TODO: add fields to store the grade as tests passed and tests failed
@@ -141,7 +148,7 @@ class GenericSubmission(models.Model):
     class Meta:
         abstract = True
         
-class Submission(GenericSubmission):
+class JavaSubmission(GenericSubmission):
     # TODO: 2.0 Rename to JARSubmission
     #@models.permalink
     def get_absolute_url(self):
@@ -152,6 +159,7 @@ class Submission(GenericSubmission):
         #        'assn_name':self.assignment.name,
         #        'sub_id':self.id})
         return "/{0}/{1}/{2}/{3}/submissions/{4}/".format(self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.id)
+    assignment = models.ForeignKey(JavaAssignment)
     file = models.FileField(upload_to=GenericSubmission.fileurl)
     grade_log = models.FileField(blank=True, upload_to=GenericSubmission.fileurl)
     grade = models.CharField(max_length=100, blank=True)
@@ -160,30 +168,27 @@ class Submission(GenericSubmission):
 ###   Forms   ###
 #################
 
-class CourseAdminForm(forms.ModelForm):
+class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
     
     def clean_course_num(self):
-        import re
         cn = self.cleaned_data['course_num']
         if not re.match(r'^[A-Z]{1,4}\d{3}[CDW]?$', cn.upper()):
             raise forms.ValidationError("Must begin with 1-4 letters, followed by 3 numbers, possibly followed by C,D or W.")
         return cn.upper()
 
-class AssignmentAdminForm(forms.ModelForm):
+class JavaAssignmentForm(forms.ModelForm):
     class Meta:
-        model = Assignment
+        model = JavaAssignment
     
     def clean_name(self):
-        import re
         name = self.cleaned_data['name']
         if not re.match(r'^[a-zA-Z][\w\-]{,24}$', name):
             raise forms.ValidationError("Name must begin with a letter, and only contain letters, numbers, _ and -")
         return name
     
     def clean_test_file(self):
-        import os.path, re, zipfile
         tf = self.cleaned_data['test_file']
         if not tf:
             raise forms.ValidationError("This assignment must include a JUnit test script.")
@@ -207,26 +212,22 @@ class AssignmentAdminForm(forms.ModelForm):
         
         return tf
 
-class SubmissionForm(forms.ModelForm):
+class JavaSubmissionForm(forms.ModelForm):
     # TODO: Create a JAR-specific JAR submission form, and a generic Submission form
     
     def clean_first_name(self):
-        import re
         fn = re.sub(r'[^a-z\-]', '', self.cleaned_data['first_name'].lower())
         if not re.match(r'\w+(\-\w+)?', fn):
             raise forms.ValidationError("Your name must begin with a letter, and can only contain letters and -")
         return fn
     
     def clean_last_name(self):
-        import re
         ln = re.sub(r'[^a-z\-]', '', self.cleaned_data['last_name'].lower())
         if not re.match(r'\w+(\-\w+)?', ln):
             raise forms.ValidationError("Your name must begin with a letter, and can only contain letters and -")
         return ln
     
     def clean_file(self):
-        import zipfile, os.path
-        
         f = self.cleaned_data['file']
         
         # Verify File extension
@@ -247,15 +248,15 @@ class SubmissionForm(forms.ModelForm):
         return f
     
     class Meta:
-        model = Submission
+        model = JavaSubmission
         fields = ('first_name', 'last_name', 'file')
         
-class SubmissionFormP(SubmissionForm):
+class JavaSubmissionFormP(JavaSubmissionForm):
     passkey = forms.CharField(max_length=25, required=True)
     
     def clean(self):
         # TODO: check to make sure we have an assignment and course object to test against
-        #    raise forms.ValidationError("No Submission instance supplied to this form. Tell a programmer.")
+        #    raise forms.ValidationError("No JavaSubmission instance supplied to this form. Tell a programmer.")
         
         # If the passkey field is specified
         if 'passkey' in self.cleaned_data:      # pragma: no branch
@@ -263,12 +264,12 @@ class SubmissionFormP(SubmissionForm):
             # First test if the passkey is the assignment passkey
             if (p != self.instance.assignment.passkey):
                 # Then test if the passkey is the course passkey
-                if (p != self.instance.course.passkey):
+                if (p != self.instance.assignment.course.passkey):
                     # If neither course nor assignment passkey, display an error
                     self._errors["passkey"] = self.error_class(["The passkey is incorrect."])
         return self.cleaned_data
     
-    class Meta(SubmissionForm.Meta):
+    class Meta(JavaSubmissionForm.Meta):
         fields = ('first_name', 'last_name', 'passkey', 'file')
         
         
@@ -276,7 +277,7 @@ class SubmissionFormP(SubmissionForm):
 ###   Signal Handlers   ###
 ###########################
 
-@receiver(pre_delete, sender=Submission)
+@receiver(pre_delete, sender=JavaSubmission)
 def delete_submission_files(sender, **kwargs):
     try:
         if kwargs['instance'].file:

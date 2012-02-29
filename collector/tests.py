@@ -25,7 +25,7 @@ from assignmentcollectorgrader.settings import PROJECT_ROOT
 import random, re, datetime, shutil, os
 
 class ScenarioTests(TestCase):
-    fixtures = ['collector.json']
+    fixtures = ['collector.json', 'users.json']
     longMessage=True
     
     def setUp(self):
@@ -96,12 +96,12 @@ class ScenarioTests(TestCase):
         self.assertRegexpMatches(response.content, '{0}\s+{1}'.format(course.term.capitalize(), course.year))
         
         #Check to make sure all assignments are listed by name, at least
-        for assn in course.assignment_set.all():
+        for assn in course.javaassignment_set.all():
             self.assertRegexpMatches(response.content, '{0}'.format(assn.name))
     """
     """    
     def test_view_assignment(self):
-        assn = Assignment.objects.get(pk=1)
+        assn = JavaAssignment.objects.get(pk=1)
         cli = Client()
         response = cli.get(assn.get_absolute_url(),  follow=True)
         
@@ -122,7 +122,7 @@ class ScenarioTests(TestCase):
     """
     """
     def test_view_assignment_early(self):
-        assn = Assignment.objects.get(pk=8)
+        assn = JavaAssignment.objects.get(pk=8)
         cli = Client()
         response = cli.get(assn.get_absolute_url(),  follow=True)
         
@@ -137,7 +137,7 @@ class ScenarioTests(TestCase):
     """
     """
     def test_view_assignment_late(self):
-        assn = Assignment.objects.get(pk=6)
+        assn = JavaAssignment.objects.get(pk=6)
         cli = Client()
         response = cli.get(assn.get_absolute_url(),  follow=True)
         
@@ -152,7 +152,7 @@ class ScenarioTests(TestCase):
     """
     """
     def test_view_assignment_password(self):
-        assn = Assignment.objects.get(pk=2)
+        assn = JavaAssignment.objects.get(pk=2)
         cli = Client()
         response = cli.get(assn.get_absolute_url(),  follow=True)
         
@@ -171,7 +171,7 @@ class ScenarioTests(TestCase):
     """
     """
     def test_view_assignment_course_password(self):
-        assn = Assignment.objects.get(pk=4)
+        assn = JavaAssignment.objects.get(pk=4)
         cli = Client()
         response = cli.get(assn.get_absolute_url(),  follow=True)
         
@@ -190,7 +190,7 @@ class ScenarioTests(TestCase):
     """
     """
     def test_view_submission(self):
-        s = Submission.objects.get(pk=1)
+        s = JavaSubmission.objects.get(pk=1)
         cli = Client()
         response = cli.get(s.get_absolute_url())
         
@@ -209,7 +209,7 @@ class ScenarioTests(TestCase):
     """
     """
     def test_view_submission_no_grade_log(self):
-        s = Submission.objects.get(pk=2)
+        s = JavaSubmission.objects.get(pk=2)
         assn = s.assignment
         cli = Client()
         response = cli.get(s.get_absolute_url())
@@ -233,7 +233,7 @@ class ScenarioTests(TestCase):
     """
     def test_view_submission_large_grade_log(self):
         cli = Client()
-        s = Submission.objects.get(pk=3)
+        s = JavaSubmission.objects.get(pk=3)
         
         response = cli.get(s.get_absolute_url())
         
@@ -256,7 +256,7 @@ class ScenarioTests(TestCase):
     """
     def test_submit_assignment_late_not_allowed(self):
         cli = Client()
-        a = Assignment.objects.get(pk=6)
+        a = JavaAssignment.objects.get(pk=6)
         self.f = open(PROJECT_ROOT+'/testdata/EmptyJar.jar', 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -276,7 +276,7 @@ class ScenarioTests(TestCase):
     """
     def test_submit_assignment_late_allowed(self):
         cli = Client()
-        a = Assignment.objects.get(pk=9)
+        a = JavaAssignment.objects.get(pk=9)
         self.f = open(PROJECT_ROOT+'/testdata/SimpleClass.jar', 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -293,13 +293,13 @@ class ScenarioTests(TestCase):
         self.assertRegexpMatches(response.content, r'You are turning in this assignment past the due date. But it will be accepted anyway. :\)')
         
         #Delete the submission created for this test
-        Submission.objects.filter(assignment__pk=a.id).delete()
+        JavaSubmission.objects.filter(assignment__pk=a.id).delete()
     
     """
     """
     def test_submit_assignment_max_submissions_reached(self):
         cli = Client()
-        a = Assignment.objects.get(pk=5)
+        a = JavaAssignment.objects.get(pk=5)
         
         self.f = open(PROJECT_ROOT+'/testdata/EmptyJar.jar', 'rb')
         
@@ -320,7 +320,7 @@ class ScenarioTests(TestCase):
     """
     def test_submit_assignment_GET(self):
         cli = Client()
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         
         response = cli.get("{0}submit/".format(a.get_absolute_url()), follow=True)
         
@@ -337,7 +337,7 @@ class ScenarioTests(TestCase):
     """
     def test_submit_assignment_early(self):
         cli = Client()
-        a = Assignment.objects.get(pk=8)
+        a = JavaAssignment.objects.get(pk=8)
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
@@ -355,7 +355,7 @@ class ScenarioTests(TestCase):
     """
     def test_submit_assignment_invalid_form(self):
         cli = Client()
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
                  {'first_name':"tester",
@@ -373,7 +373,7 @@ class ScenarioTests(TestCase):
     """
     def test_submit_assignment_no_test_file(self):
         cli = Client()
-        a = Assignment.objects.get(pk=10)
+        a = JavaAssignment.objects.get(pk=10)
         
         f = open(PROJECT_ROOT+'/testdata/EmptyJar.jar', 'rb')
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -389,13 +389,13 @@ class ScenarioTests(TestCase):
         #Not really certain how to test this.
         
         #Clean up after the test
-        Submission.objects.get(assignment__pk=a.id).delete()
+        JavaSubmission.objects.get(assignment__pk=a.id).delete()
     
     """
     """
     def test_submit_assignment_password(self):
         cli = Client()
-        a = Assignment.objects.get(pk=2)
+        a = JavaAssignment.objects.get(pk=2)
         
         f = open(PROJECT_ROOT+'/testdata/SimpleClass.jar', 'rb')
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -413,7 +413,7 @@ class ScenarioTests(TestCase):
         self.assertRegexpMatches(response.content, r'(?!The passkey is incorrect)')
         
         #Clean up after the test
-        Submission.objects.get(assignment__pk=a.id).delete()
+        JavaSubmission.objects.get(assignment__pk=a.id).delete()
     
         
 """
@@ -422,7 +422,7 @@ When the grader is moved to its own app, these tests will still remain here, but
 also serve as basis for the tests written for the grader.
 """
 class GraderTests(TestCase):
-    fixtures = ['collector.json']
+    fixtures = ['collector.json', 'users.json']
     longMessage = True
     unable_to_parse_regex = re.compile(r'Grade[^A-Z]+Unable to parse grade\.')
     def setUp(self):
@@ -430,14 +430,14 @@ class GraderTests(TestCase):
     def tearDown(self):
         #self.f.close() # always close files, regardless of success or failure
         #shutil.rmtree(,ignore_errors=True)
-        Submission.objects.filter(pk__gt=3).delete() # delete the files from the disk too
+        JavaSubmission.objects.filter(pk__gt=3).delete() # delete the files from the disk too
 
     """
     Catch the case where there are no files to compile
     """
     def test_compile_failure_no_src(self):
         cli = Client()
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         self.f = open(PROJECT_ROOT+'/testdata/EmptyJar.jar', 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -463,7 +463,7 @@ class GraderTests(TestCase):
     """
     def test_compile_failure_syntax_error(self):
         cli = Client()
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         self.f = open(PROJECT_ROOT + "/testdata/SyntaxError.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -489,7 +489,7 @@ class GraderTests(TestCase):
     """
     def test_compile_failure_only_class_files(self):
         cli = Client()
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         self.f = open(PROJECT_ROOT + "/testdata/ClassFileOnly.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -516,7 +516,7 @@ class GraderTests(TestCase):
     def test_watchdog_timer(self):
         #self.skipTest("Long test, need to move to its own queue")
         cli = Client()
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         self.f = open(PROJECT_ROOT + "/testdata/WatchdogTimer.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -544,7 +544,7 @@ class GraderTests(TestCase):
     def test_junit_exception(self):
         #self.skipTest("Need to figure out how to throw this specific error.")
         cli = Client()
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         self.f = open(PROJECT_ROOT + "/testdata/Exception.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -570,7 +570,7 @@ class GraderTests(TestCase):
     """
     def test_junit_failures(self):
         cli = Client()
-        a = Assignment.objects.get(pk=7)
+        a = JavaAssignment.objects.get(pk=7)
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestFailures.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -599,7 +599,7 @@ class GraderTests(TestCase):
     """
     def test_junit_failure(self):
         cli = Client()
-        a = Assignment.objects.get(pk=7)
+        a = JavaAssignment.objects.get(pk=7)
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestFailure.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -628,7 +628,7 @@ class GraderTests(TestCase):
     """
     def test_junit_errors(self):
         cli = Client()
-        a = Assignment.objects.get(pk=7)
+        a = JavaAssignment.objects.get(pk=7)
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestErrors.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -657,7 +657,7 @@ class GraderTests(TestCase):
     """
     def test_junit_error(self):
         cli = Client()
-        a = Assignment.objects.get(pk=7)
+        a = JavaAssignment.objects.get(pk=7)
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestError.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -685,7 +685,7 @@ class GraderTests(TestCase):
     """
     def test_junit_one_error(self):
         cli = Client()
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         self.f = open(PROJECT_ROOT + "/testdata/SingleError.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -713,7 +713,7 @@ class GraderTests(TestCase):
     """
     def test_junit_one_of_each_type(self):
         cli = Client()
-        a = Assignment.objects.get(pk=7)
+        a = JavaAssignment.objects.get(pk=7)
         c = a.course
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestOneOfEach.jar", 'rb')
         
@@ -748,7 +748,7 @@ class GraderTests(TestCase):
     """
     def test_junit_single_pass(self):
         cli = Client()
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         self.f = open(PROJECT_ROOT + "/testdata/SimpleClass.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -777,7 +777,7 @@ class GraderTests(TestCase):
     """
     def test_junit_multiple_pass(self):
         cli = Client()
-        a = Assignment.objects.get(pk=7)
+        a = JavaAssignment.objects.get(pk=7)
         self.f = open(PROJECT_ROOT + "/testdata/ThreeTestClass.jar", 'rb')
         
         response = cli.post("{0}submit/".format(a.get_absolute_url()),
@@ -805,7 +805,7 @@ class GraderTests(TestCase):
     """
     def test_generate_large_grade_log(self):
         cli = Client()
-        a = Assignment.objects.get(pk=7)
+        a = JavaAssignment.objects.get(pk=7)
         c = a.course
         self.f = open(PROJECT_ROOT+'/testdata/GenerateLargeGradeLog.jar', 'rb')
         
@@ -831,10 +831,11 @@ class GraderTests(TestCase):
 
 
 """
-Generate some random valid data to populate a CourseAdminForm.
+Generate some random valid data to populate a CourseForm.
 Then attempt to validate it.
 """
 class CourseFormTests(TestCase):
+    fixtures = ['users.json']
     longMessage = True
     def setUp(self):
         self.data = {}
@@ -845,6 +846,7 @@ class CourseFormTests(TestCase):
         self.data['course_title']= course_title
         self.data['year']= random.randint(0000,9999) # pick a random year
         self.data['term']= Course.TERM_CHOICES[random.randint(0,3)][0] # random term
+        self.data['creator'] = 1;
         
     def tearDown(self):
         pass
@@ -867,11 +869,11 @@ class CourseFormTests(TestCase):
                                
         self.data['course_num'] = course_num
         
-        c = CourseAdminForm(self.data)
+        c = CourseForm(self.data)
         
         # Validate the data. this should pass
         self.assertTrue(c.is_valid(), 
-            """CourseAdminForm failed on valid input: 
+            """CourseForm failed on valid input: 
                 course_num: {0} 
                 course_title: {1} 
                 year: {2} 
@@ -887,11 +889,11 @@ class CourseFormTests(TestCase):
             
         self.data['course_num'] = bad_course_num
             
-        c = CourseAdminForm(self.data)
+        c = CourseForm(self.data)
         
         # Validate the data. This should fail
         self.assertFalse(c.is_valid(), 
-            """CourseAdminForm succeeded on invalid input: 
+            """CourseForm succeeded on invalid input: 
                 course_num: {0}
                 course_title: {1} 
                 year: {2} 
@@ -903,7 +905,7 @@ These tests verify that the assignment form validation is functioning properly,
 both by rejecting invalid inputs, and by accepting valid inputs.
 """
 class AssignmentFormTests(TestCase):
-    fixtures = ['collector.json']
+    fixtures = ['collector.json', 'users.json']
     longMessage=True
     def setUp(self): 
         name = random.choice("abdcefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -914,6 +916,9 @@ class AssignmentFormTests(TestCase):
                 'start_date':datetime.datetime.now(),
                 'due_date':datetime.datetime.now() + datetime.timedelta(hours=2),
                 'max_submissions': 10,
+                'java_cmd':"-Xms32m -Xmx32m junit.textui.TestRunner",
+                'options': 1,
+                'creator': 1,
                 }
     
     def tearDown(self):
@@ -930,11 +935,11 @@ class AssignmentFormTests(TestCase):
                      }
         f.close()
         
-        asgnmt_form = AssignmentAdminForm(self.data, file_data)
+        asgnmt_form = JavaAssignmentForm(self.data, file_data)
         
         # validate name and JAR file support
         self.assertTrue(asgnmt_form.is_valid(), # "Fields in error: " + ', '.join(asgnmt_form.errors.keys()))
-            """AssignmentAdminForm failed on valid input
+            """JavaAssignmentForm failed on valid input
                 course: {0}
                 name: {1}
                 start_date: {2}
@@ -954,7 +959,7 @@ class AssignmentFormTests(TestCase):
                     }
         f.close()
         
-        asgnmt_form = AssignmentAdminForm(self.data, file_data)
+        asgnmt_form = JavaAssignmentForm(self.data, file_data)
         
         #Validate the valid Jar
         self.assertTrue(asgnmt_form.is_valid(), "Failed to accept valid Jar file")
@@ -973,7 +978,7 @@ class AssignmentFormTests(TestCase):
                      'test_file': SimpleUploadedFile('ValidJavaFile.java', "ffffff")
                      }
         
-        asgnmt_form = AssignmentAdminForm(self.data, file_data)
+        asgnmt_form = JavaAssignmentForm(self.data, file_data)
         
         #Validate that we catch the bad name
         self.assertFalse(asgnmt_form.is_valid(), "Failed to catch bad name: {0}".format(name))
@@ -989,7 +994,7 @@ class AssignmentFormTests(TestCase):
                      }
         f.close()
         
-        asgnmt_form = AssignmentAdminForm(self.data, file_data)
+        asgnmt_form = JavaAssignmentForm(self.data, file_data)
         
         self.assertFalse(asgnmt_form.is_valid(), "Failed to catch bad JAR: {0}".format(file_data['test_file']))
     
@@ -1003,7 +1008,7 @@ class AssignmentFormTests(TestCase):
                      'test_file': SimpleUploadedFile('NotAJarOrJavaFile.'+fake_ext, "ffffff")
                      }
         
-        asgnmt_form = AssignmentAdminForm(self.data, file_data)
+        asgnmt_form = JavaAssignmentForm(self.data, file_data)
         
         self.assertFalse(asgnmt_form.is_valid(), "Failed to catch non-java/jar file: {0}".format(file_data['test_file']))
     
@@ -1016,7 +1021,7 @@ class AssignmentFormTests(TestCase):
                      'test_file': SimpleUploadedFile('NoFileExtension', "ffffff")
                      }
         
-        asgnmt_form = AssignmentAdminForm(self.data, file_data)
+        asgnmt_form = JavaAssignmentForm(self.data, file_data)
         
         self.assertFalse(asgnmt_form.is_valid(), "Failed to catch no file extension")
         
@@ -1024,7 +1029,7 @@ class AssignmentFormTests(TestCase):
     Verify that we provide an error when there is no test file
     """
     def test_no_test_file(self):
-        asgnmt_form = AssignmentAdminForm(self.data)
+        asgnmt_form = JavaAssignmentForm(self.data)
         
         self.assertFalse(asgnmt_form.is_valid(), "Validated a form with no test file")
         
@@ -1034,7 +1039,7 @@ class AssignmentFormTests(TestCase):
 These tests validate the operation of submission forms.
 """
 class SubmissionFormTests(TestCase):
-    fixtures = ['collector.json']
+    fixtures = ['collector.json', 'users.json']
     longMessage = True
     def setUp(self):
         self.data = {
@@ -1054,7 +1059,7 @@ class SubmissionFormTests(TestCase):
     Accept a valid form
     """
     def test_valid_jar(self):
-        s = SubmissionForm(self.data, self.file_data)
+        s = JavaSubmissionForm(self.data, self.file_data)
         
         self.assertTrue(s.is_valid(),
             """Failed to validate a valid submission form.
@@ -1073,7 +1078,7 @@ class SubmissionFormTests(TestCase):
                      }
         f.close()
         
-        s = SubmissionForm(self.data, file_data)
+        s = JavaSubmissionForm(self.data, file_data)
         
         self.assertFalse(s.is_valid(), "Accepted an invalid jar.")
     
@@ -1087,7 +1092,7 @@ class SubmissionFormTests(TestCase):
                     }
         f.close()
         
-        s = SubmissionForm(self.data, file_data)
+        s = JavaSubmissionForm(self.data, file_data)
         
         self.assertFalse(s.is_valid(), "Accepted a valid jar without an extension.")
     
@@ -1098,7 +1103,7 @@ class SubmissionFormTests(TestCase):
         self.data['first_name'] = ''
         self.data['last_name'] = ''
         
-        s = SubmissionForm(self.data, self.file_data)
+        s = JavaSubmissionForm(self.data, self.file_data)
         
         self.assertFalse(s.is_valid(), "Failed to reject empty names")
         
@@ -1109,7 +1114,7 @@ class SubmissionFormTests(TestCase):
         self.data['first_name'] = ''.join(random.sample(" `~!@#$%^&*()-_=+0123456789,.<>?|{}[]\\/\t", random.randint(1,25)))
         self.data['last_name'] = ''.join(random.sample(" `~!@#$%^&*()-_=+0123456789,.<>?|{}[]\\/\t", random.randint(1,25)))
         
-        s = SubmissionForm(self.data, self.file_data)
+        s = JavaSubmissionForm(self.data, self.file_data)
         
         self.assertFalse(s.is_valid(), "Failed to reject invalid names")
         
@@ -1120,7 +1125,7 @@ class SubmissionFormTests(TestCase):
         self.data['first_name'] = random.choice("abcdefghijklmnopqrstuvwxyz").join(random.sample(" abcdefghijklmnopqrstuvwxyz`~!@#$%^&*0123456789", random.randint(2,12)))
         self.data['last_name'] = random.choice("abcdefghijklmnopqrstuvwxyz").join(random.sample(" abcdefghijklmnopqrstuvwxyz`~!@#$%^&*0123456789", random.randint(2,12)))
         
-        s = SubmissionForm(self.data, self.file_data)
+        s = JavaSubmissionForm(self.data, self.file_data)
         
         self.assertTrue(s.is_valid(), 
                         """Failed to clean symbols from name. 
@@ -1138,13 +1143,13 @@ class SubmissionFormTests(TestCase):
     Put the course password on the form and validate
     """
     def test_valid_course_password(self):
-        a = Assignment.objects.get(pk=4) # get the assignment object with no password
+        a = JavaAssignment.objects.get(pk=4) # get the assignment object with no password
         c = Course.objects.get(pk=2) # get the course object with a password
-        s = Submission(assignment=a, course=c)
+        s = JavaSubmission(assignment=a)
         
         self.data['passkey'] = c.passkey # set the password to the course password
         
-        sfp = SubmissionFormP(self.data, self.file_data, instance=s)
+        sfp = JavaSubmissionFormP(self.data, self.file_data, instance=s)
         
         self.assertTrue(sfp.is_valid(), "Did not validate course password")
     
@@ -1152,13 +1157,13 @@ class SubmissionFormTests(TestCase):
     Put the assignment password on the form and validate
     """ 
     def test_valid_assn_password(self):
-        a = Assignment.objects.get(pk=2) # get the assignment object with a password
+        a = JavaAssignment.objects.get(pk=2) # get the assignment object with a password
         c = Course.objects.get(pk=1) # get the course object with no password
-        s = Submission(assignment=a, course=c)
+        s = JavaSubmission(assignment=a)
         
         self.data['passkey'] = a.passkey # set the password to the assignment password
         
-        sfp = SubmissionFormP(self.data, self.file_data, instance=s)
+        sfp = JavaSubmissionFormP(self.data, self.file_data, instance=s)
         
         self.assertTrue(sfp.is_valid(), "Did not validate assignment password")
     
@@ -1166,13 +1171,13 @@ class SubmissionFormTests(TestCase):
     Put the assignment password on the form, see if validation still succeeds
     """
     def test_assn_course_password(self):
-        a = Assignment.objects.get(pk=3) # get the assignment object with a password
+        a = JavaAssignment.objects.get(pk=3) # get the assignment object with a password
         c = Course.objects.get(pk=2) # get the course object with a password
-        s = Submission(assignment=a, course=c)
+        s = JavaSubmission(assignment=a)
         
         self.data['passkey'] = a.passkey # set the password to the assignment password
         
-        sfp = SubmissionFormP(self.data, self.file_data, instance=s)
+        sfp = JavaSubmissionFormP(self.data, self.file_data, instance=s)
         
         self.assertTrue(sfp.is_valid(), "Did not validate assignment password")
      
@@ -1180,13 +1185,13 @@ class SubmissionFormTests(TestCase):
     Put the course password on the form, see if validation still succeeds
     """   
     def test_course_assn_password(self):
-        a = Assignment.objects.get(pk=3) # get the assignment object with a password
+        a = JavaAssignment.objects.get(pk=3) # get the assignment object with a password
         c = Course.objects.get(pk=2) # get the course object with a password
-        s = Submission(assignment=a, course=c)
+        s = JavaSubmission(assignment=a)
         
         self.data['passkey'] = c.passkey # set the password to the assignment password
         
-        sfp = SubmissionFormP(self.data, self.file_data, instance=s)
+        sfp = JavaSubmissionFormP(self.data, self.file_data, instance=s)
         
         self.assertTrue(sfp.is_valid(), "Did not validate course password")
         
@@ -1194,19 +1199,19 @@ class SubmissionFormTests(TestCase):
     Put the course password on the form, see if validation still succeeds
     """   
     def test_invalid_password(self):
-        a = Assignment.objects.get(pk=3) # get the assignment object with a password
+        a = JavaAssignment.objects.get(pk=3) # get the assignment object with a password
         c = Course.objects.get(pk=2) # get the course object with a password
-        s = Submission(assignment=a, course=c)
+        s = JavaSubmission(assignment=a)
         
         self.data['passkey'] = 'c.passkey' # set the password to something false
         
-        sfp = SubmissionFormP(self.data, self.file_data, instance=s)
+        sfp = JavaSubmissionFormP(self.data, self.file_data, instance=s)
         
         self.assertFalse(sfp.is_valid(), "Should not validate either password")
 
 class MiscTests(TestCase):
     longMessage = True
-    fixtures = ['collector.json']
+    fixtures = ['collector.json', 'users.json']
     def setUp(self):
         pass
     def tearDown(self):
@@ -1218,9 +1223,9 @@ class MiscTests(TestCase):
     def test_display_grades(self):
         from collector.admin import AssignmentAdmin
         admin = AssignmentAdmin(Assignment, None)
-        a = Assignment.objects.get(pk=1)
+        a = JavaAssignment.objects.get(pk=1)
         
-        response = admin.display_grades(None, Assignment.objects.filter(pk=1))
+        response = admin.display_grades(None, JavaAssignment.objects.filter(pk=1))
         
         if datetime.datetime.now() < a.due_date:
             self.assertRegexpMatches(response.__str__(), r'These grades are preliminary\. The assignment is not due yet\.',)

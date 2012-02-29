@@ -14,14 +14,14 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from assignmentcollectorgrader.collector.models import Course, CourseAdminForm, Assignment, AssignmentAdminForm, Submission
+from assignmentcollectorgrader.collector.models import Course, CourseForm, JavaAssignment, JavaAssignmentForm, JavaSubmission
 from django.contrib import admin
 from django import forms
 
 
 
 class CourseAdmin(admin.ModelAdmin):
-    form = CourseAdminForm
+    form = CourseForm
     fieldsets = (
         ('Course Information', {
             'fields': ('course_num', 'course_title',)
@@ -45,7 +45,7 @@ class CourseAdmin(admin.ModelAdmin):
 
 
 class AssignmentAdmin(admin.ModelAdmin):
-    form = AssignmentAdminForm
+    form = JavaAssignmentForm
     fieldsets = (
         ('Assignment Information', {
             'fields': ('course', 'name', 'start_date', 'due_date', )
@@ -120,5 +120,5 @@ class SubmissionAdmin(admin.ModelAdmin):
     lowercase_names.short_description = "Convert student names to Lowercase"
 
 admin.site.register(Course, CourseAdmin)
-admin.site.register(Assignment, AssignmentAdmin)
-admin.site.register(Submission, SubmissionAdmin)
+admin.site.register(JavaAssignment, AssignmentAdmin)
+admin.site.register(JavaSubmission, SubmissionAdmin)
