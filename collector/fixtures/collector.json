@@ -181,8 +181,6 @@
 	"fields": {
 		"first_name": "tester", 
 		"last_name": "test", 
-		"grade_log": "submissions/9999/fall/CS000/lab999-TestLab/test_tester_1.log", 
-		"grade": "1/1", 
 		"assignment": 1, 
 		"submission_number": 1, 
 		"file": "submissions/9999/fall/CS000/lab999-TestLab/test_tester_1.jar", 
@@ -195,8 +193,6 @@
 	"fields": {
 		"first_name": "tester", 
 		"last_name": "test", 
-		"grade_log": "", 
-		"grade": "1/1", 
 		"assignment": 5, 
 		"submission_number": 1, 
 		"file": "", 
@@ -209,12 +205,40 @@
 	"fields": {
 		"first_name": "tester", 
 		"last_name": "tester", 
-		"grade_log": "LargeGradeLog.log", 
-		"grade": "0/1", 
 		"assignment": 1, 
 		"submission_number": 2, 
 		"file": "", 
 		"submission_time": "2012-02-13 22:53:18"
+	}
+}, 
+
+{"pk": 1, 
+	"model": "grader.javagrade", 
+	"fields": { 
+		"grade_log": "submissions/9999/fall/CS000/lab999-TestLab/test_tester_1.log", 
+		"total_tests": 1,
+		"tests_passed": 1,
+		"submission": 1
+	}
+}, 
+
+{"pk": 2, 
+	"model": "grader.javagrade", 
+	"fields": { 
+		"grade_log": "", 
+		"total_tests": 1,
+		"tests_passed": 1,
+		"submission": 2
+	}
+}, 
+
+{"pk": 3, 
+	"model": "grader.javagrade", 
+	"fields": { 
+		"grade_log": "LargeGradeLog.log", 
+		"total_tests": 1,
+		"tests_passed": 0,
+		"submission": 3
 	}
 }
 ]

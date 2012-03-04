@@ -60,8 +60,12 @@ class AssignmentAdmin(admin.ModelAdmin):
         ('Assignment Passkey', {
             'fields': ('passkey',)
         }),
-        ('Test File', {
+        ('Grader Settings', {
             'fields':('test_file', )
+        }),
+        ('Advanced', {
+            'classes': ('collapse',),
+            'fields':('java_cmd', 'options', 'watchdog_wait')
         }),
     )
     list_display = ('__unicode__', 'course', 'due_date', )
@@ -96,28 +100,19 @@ class AssignmentAdmin(admin.ModelAdmin):
 class SubmissionAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Submission Information', {
-            'fields': ('first_name', 'last_name', 'submission_time', 'course', 'assignment', )
+            'fields': ('first_name', 'last_name', 'submission_time', 'assignment', )
         }),
         ('Submitted File', {
-            'fields':('file', 'grade_log',)
+            'fields':('file', )#'grade_log',)
         }),
-        ('Grade', {
-            'fields':('grade',)
-        }),
+#        ('Grade', {
+#            'fields':('grade',)
+#        }),
     )
-    list_display = ('__unicode__', 'last_name', 'first_name', 'course', 'assignment', 'submission_time', 'grade')
-    list_filter = ('course', 'assignment', 'submission_time', 'last_name',)
-    readonly_fields = ('first_name', 'last_name', 'assignment', 'course', 'submission_time', 'grade',)
-    actions = ['lowercase_names']
-    def lowercase_names(self, request, queryset):
-        for sub in queryset:
-            sub.first_name = sub.first_name.lower()
-            sub.last_name = sub.last_name.lower()
-            sub.save()
-            # Terrible, inefficient code. 
-            # But queryset.update(first_name=first_name.lower(), last_name=last_name.lower()) doesn't seem to want to work.
-            # Also, it will only be used once, so it's acceptable.
-    lowercase_names.short_description = "Convert student names to Lowercase"
+    list_display = ('__unicode__', 'last_name', 'first_name', 'assignment', 'submission_time', )#'grade')
+    list_filter = ('assignment', 'submission_time', 'last_name',)
+    readonly_fields = ('first_name', 'last_name', 'assignment', 'submission_time', )#'grade',)
+    
 
 admin.site.register(Course, CourseAdmin)
 admin.site.register(JavaAssignment, AssignmentAdmin)

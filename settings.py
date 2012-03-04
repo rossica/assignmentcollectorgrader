@@ -112,7 +112,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
-    #'assignmentcollectorgrader.collector',
     'assignmentcollectorgrader.collector',
-    #'assignmentcollectorgrader.grader',
+    'assignmentcollectorgrader.grader',
 )

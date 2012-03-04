@@ -22,7 +22,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 
-import os, os.path, re, zipfile
+import datetime, os, os.path, re, zipfile
 
 # large changes, e.g. API changes, 
 # database changes (that require syncdb and database export/import)
@@ -78,7 +78,7 @@ class Course(models.Model):
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
     description = models.TextField(blank=True, verbose_name='Course Description')
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access. Overridden by JavaAssignment passkeys.')
-    year = models.IntegerField(default=2010, help_text='The year this course is offered.')
+    year = models.IntegerField(default=datetime.datetime.now().year, help_text='The year this course is offered.')
     term = models.CharField(max_length=6, choices=TERM_CHOICES, help_text='The term this course is offered.')
     email = models.EmailField("Email to send grades to", blank=True)
     creator = models.ForeignKey(User, default=1)
@@ -86,13 +86,7 @@ class Course(models.Model):
 class GenericAssignment(models.Model):
     def testfileurl(self, filename):
         extension = os.path.splitext(filename)
-        return "tests/{0}/{1}/{2}/{3}/{4}/".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
-    OPTIONS_CHOICES = (
-                       (0, 'None'),
-                       (1, 'Automated Grading'),
-                       (2, 'Plagiarism detection'),
-                       (3, 'Both')
-                       )
+        return "tests/{0}/{1}/{2}/{3}/{4}".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
     
     def __unicode__(self):
         #return "{0}: {1}".format(self.course.__unicode__(), self.name)
@@ -107,7 +101,6 @@ class GenericAssignment(models.Model):
     max_submissions = models.IntegerField(default=0, help_text='Maximum allowed submissions per student. 0 for unlimited.')
     allow_late = models.BooleanField("Allow Late Submissions", default=False)
     creator = models.ForeignKey(User, default=1)
-    options = models.IntegerField(default=1, choices=OPTIONS_CHOICES)
     
     class Meta:
         abstract = True
@@ -123,8 +116,16 @@ class JavaAssignment(GenericAssignment):
         #        'course_id':self.course.course_num,
         #        'assn_name':self.name})
         return "/{0}/{1}/{2}/{3}/".format(self.course.year, self.course.term, self.course.course_num, self.name)
+    OPTIONS_CHOICES = (
+                       (0, 'None'),
+                       (1, 'Automated Grading'),
+                       (2, 'Plagiarism detection'),
+                       (3, 'Both')
+                       )
     test_file = models.FileField(upload_to=GenericAssignment.testfileurl, storage=AssignmentFileStorage(), blank=True)
-    java_cmd = models.CharField(max_length=100, default="-Xms32m -Xmx32m junit.textui.TestRunner")
+    java_cmd = models.CharField(help_text="Command line parameters to the java interpreter. Do not change this unless you know exactly what you are doing.", max_length=100, default="-Xms32m -Xmx32m junit.textui.TestRunner")
+    options = models.IntegerField("Optional Features", default=1, choices=OPTIONS_CHOICES)
+    watchdog_wait = models.IntegerField("Watchdog timer", help_text="Time to wait, in seconds, for test execution. Kills the test if it's still executing after this much time.", default=30)
 
 class GenericSubmission(models.Model):
     def fileurl(self, filename):
@@ -161,8 +162,8 @@ class JavaSubmission(GenericSubmission):
         return "/{0}/{1}/{2}/{3}/submissions/{4}/".format(self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.id)
     assignment = models.ForeignKey(JavaAssignment)
     file = models.FileField(upload_to=GenericSubmission.fileurl)
-    grade_log = models.FileField(blank=True, upload_to=GenericSubmission.fileurl)
-    grade = models.CharField(max_length=100, blank=True)
+    #grade_log = models.FileField(blank=True, upload_to=GenericSubmission.fileurl)
+    #grade = models.CharField(max_length=100, blank=True)
     
 #################
 ###   Forms   ###
@@ -277,7 +278,7 @@ class JavaSubmissionFormP(JavaSubmissionForm):
 ###   Signal Handlers   ###
 ###########################
 
-@receiver(pre_delete, sender=JavaSubmission)
+#@receiver(pre_delete, sender=JavaSubmission)
 def delete_submission_files(sender, **kwargs):
     try:
         if kwargs['instance'].file:

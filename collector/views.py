@@ -23,6 +23,8 @@ from django.core.urlresolvers import reverse
 from assignmentcollectorgrader.collector.models import *
 from assignmentcollectorgrader.settings import JUNIT_ROOT
 
+from grader.models import *
+
 import os, os.path, re, shutil, subprocess, tempfile, datetime, time, zipfile
 
 #Watchdog timer maths
@@ -69,29 +71,28 @@ def view_submission(request, year, term, course_id, assn_name, sub_id):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(JavaAssignment, course=c.pk, name=assn_name)
     sub = get_object_or_404(JavaSubmission, id=sub_id)
+    grade = sub.javagrade
     
-    if sub.grade_log:
-        if sub.grade_log.size < 2097152:
-            grader_output = sub.grade_log.read()
+    if grade.grade_log:
+        if grade.grade_log.size < 2097152:
+            grader_output = grade.grade_log.read()
         else:
-            f = open(sub.grade_log.path)
-            f.seek(0)
-            grader_output = f.read(100000)
+            grader_output = ''.join(grade.grade_log.readlines(100000))
             grader_output +="\n=================================================================================="
             grader_output +="\n Grade results too long, truncating.............................................\n"
             grader_output +="==================================================================================\n"
-            f.seek(-100000, os.SEEK_END)
-            grader_output += f.read(100000)
+            grade.grade_log.seek(-100000, os.SEEK_END)
+            grader_output += ''.join(grade.grade_log.readlines(100000))
             grader_output += "\n Grade results are too long. Please remove any extraneous output (println(), etc.) before submitting again."
-            f.close()
     else:
         grader_output = "No grade results to display."
     
-    return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':sub})
+    return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':sub, 'grade':grade})
 
 def submit_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(JavaAssignment, course=c.pk, name=assn_name)
+    grader = None
     
     if request.method == 'POST':
         s = JavaSubmission(assignment=assn)
@@ -141,9 +142,10 @@ def submit_assignment(request, year, term, course_id, assn_name):
             # If this assignment contains a test file
             if assn.test_file:
                 # append the grader output to send it to the user.
-                grader_output += _grader(assn, submission)
+                grader = JavaGrade()
+                grader_output += grader.grade(assn, submission)
             
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':submission})
+            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':submission, 'grade':grader})
         
         else: # Invalid form
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form}) 
