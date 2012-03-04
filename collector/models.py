@@ -29,7 +29,7 @@ import os
 MAJOR_VERSION = 1 
 # feature development, bug fixes are rolled into feature enhancements
 # Security fixes do get their own version
-MINOR_VERSION = 0 
+MINOR_VERSION = 1 
 
 
 ##################
@@ -87,7 +87,7 @@ class GenericAssignment(models.Model):
     def testfileurl(self, filename):
         import os.path
         extension = os.path.splitext(filename)
-        return "tests/{0}/{1}/{2}/{3}/{4}/".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
+        return "tests/{0}/{1}/{2}/{3}/{4}".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
     
     def __unicode__(self):
         #return "{0}: {1}".format(self.course.__unicode__(), self.name)
