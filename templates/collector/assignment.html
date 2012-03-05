@@ -58,13 +58,11 @@
             Submitted by {{submission.first_name}} {{submission.last_name}}<br>
             Submitted on {{submission.submission_time}}<br>
             Attempt number: {{submission.submission_number}}<br>
-            Grade: <b>{% if grade %}
-                        {% if grade.error %}
-                            {{grade.error_text}}
-                        {% else %}
-                            {{grade.tests_passed}} / {{grade.total_tests}}
-                        {% endif %}
-                    {% endif %}</b><br>
+            Grade: {% if grade %} <b>{{grade.tests_passed}} / {{grade.total_tests}}</b><br>
+            	{% if grade.error %}
+            	Reason: <b>{{ grade.error_text }}</b><br>
+            	{% endif %}
+            {% endif %}
             <br>
             <h3>Grade Results</h3>
         {% endif %}

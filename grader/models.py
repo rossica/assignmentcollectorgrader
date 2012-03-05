@@ -18,7 +18,7 @@ from django.db import models
 from django import forms
 from django.core.files import File
 
-from assignmentcollectorgrader.settings import MEDIA_ROOT, JUNIT_ROOT
+from settings import MEDIA_ROOT, JUNIT_ROOT
 from collector.models import JavaSubmission, GenericSubmission
 
 

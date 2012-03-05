@@ -14,7 +14,8 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from assignmentcollectorgrader.collector.models import Course, CourseForm, JavaAssignment, JavaAssignmentForm, JavaSubmission
+from collector.models import Course, CourseForm, JavaAssignment, JavaAssignmentForm, JavaSubmission
+from grader.models import JavaGrade
 from django.contrib import admin
 from django import forms
 
@@ -80,16 +81,19 @@ class AssignmentAdmin(admin.ModelAdmin):
         for assn in queryset:
             # Only add assignments that have started. No point showing assignments that can't even be turned in yet.
             if assn.start_date < datetime.datetime.now():
-                warning = None
+                warning = ""
                 # Get all names submitted to this assignment
-                names = assn.submission_set.values_list('last_name', 'first_name').distinct()
+                names = assn.javasubmission_set.values_list('last_name', 'first_name').distinct()
                 # Get the newest submission for each name and store it in a list
                 submissions = []
                 for name in names:
-                    submissions.append(Submission.objects.filter(last_name=name[0], first_name=name[1], assignment=assn).latest('submission_time'))
+                    submissions.append(JavaSubmission.objects.filter(last_name=name[0], first_name=name[1], assignment=assn).order_by('-javagrade__tests_passed', '-submission_time')[0])
                 # Display a warning if grades are being retrieved before the due date. 
                 if datetime.datetime.now() < assn.due_date:
                     warning = "These grades are preliminary. The assignment is not due yet."
+                # Display a warning if late assignments are allowed and it's after the due date
+                if assn.allow_late and assn.due_date < datetime.datetime.now():
+                    warning = "Submissions after the due date are allowed."
                 # Add the assignment, the latest unique submissions, and warnings (if any) to the output
                 grades.append([assn, submissions, warning])
         return render_to_response('collector/grades.html', {'grades':grades,})

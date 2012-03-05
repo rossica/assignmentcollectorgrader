@@ -23,30 +23,55 @@
 	<body>
 	<!-- for each assignment, show the assignment name, course name, warnings (if any) then student grades. -->
 		{% for assn, stu, warning in grades %}
-			<h3>{{assn.course.course_num}}: {{assn.name}}</h3>
-			<p> Due: {{assn.due_date}}</p>
-			{% if warning %}
-				<h4>
-					<font color=red>{{warning}}</font><br>
-				</h4>
-			{% endif %}
-			<table border=1 cellpadding=0>
+		<table border=1 cellpadding=3 rules=all >
 			<tr>
+				<th bgcolor=CCFFFF>
+					{{assn.course.course_num}} - {{assn.course.course_name}}
+				</th>
+			</tr>
+			<tr>
+				<th bgcolor=FFFFCC>
+					<h4>{{assn.name}}</h4>
+					
+				</th>
+			</tr>
+			<tr align=left><td>
+					Due: {{assn.due_date}}
+					</td></tr>
+			{% if warning %}
+			<tr>
+				<th>
+					<h4><font color=red>{{warning}}</font></h4>
+				</th>
+			</tr>
+			{% endif %}
+			<tr>
+			<td>
+			<table border=0 cellpadding=4 cellspacing=2 rules=all>
+			<tr >
 				<th>Last Name</th>
 				<th>First Name</th>
 				<th>Attempt no.</th>
 				<th>Grade</th>
+				<th>Notes</th>
 			</tr>
 			{% for g in stu %}
 				<tr>
 					<td>{{g.last_name}}</td>
 					<td>{{g.first_name}}</td>
 					<td align=center>{{g.submission_number}}</td>
-					<td align=center>{{g.grade}}</td>
+					<td align=center>{{g.javagrade.tests_passed}}/{{g.javagrade.total_tests}}</td>
+					<td>{{g.javagrade.error_text}}</td>
 				</tr>
 			{% endfor %}
 			</table>
-			<hr>
+			</td>
+			</tr>
+			</table><br>
+			<br>
+			
+			<br>
 		{% endfor %}
+		
 	</body>
 </html>

@@ -21,7 +21,7 @@ from django import forms
 from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from collector.models import *
-from assignmentcollectorgrader.settings import PROJECT_ROOT
+from settings import PROJECT_ROOT
 import random, re, datetime, shutil, os
 
 class ScenarioTests(TestCase):
@@ -449,9 +449,10 @@ class GraderTests(TestCase):
         
         # check the upload succeeded
         self.assertEqual(response.status_code, 200)
-        
+        s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+ compiler errors', "Didn't produce compiler errors")
+        self.assertRegexpMatches(response.content, r'Grade\D+?{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't find grade")
+        self.assertRegexpMatches(response.content, r'Reason\D+?\d+ compiler errors', "Didn't find reason for failure")
         
         #Should not be unable to parse the grade (should be able to parse the grade)
         if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
@@ -475,10 +476,10 @@ class GraderTests(TestCase):
         
         # check the upload succeeded
         self.assertEqual(response.status_code, 200)
-        
+        s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+ compiler errors', "Didn't produce compiler errors")
-        
+        self.assertRegexpMatches(response.content, r'Grade\D+?{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't find grade")
+        self.assertRegexpMatches(response.content, r'Reason\D+?\d+ compiler errors', "Didn't find reason for failure")        
         #Should not be unable to parse the grade (should be able to parse the grade)
         if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
             print response.content
@@ -501,10 +502,10 @@ class GraderTests(TestCase):
         
         # check the upload succeeded
         self.assertEqual(response.status_code, 200)
-        
+        s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'Grade[^0-9]+\d+ compiler errors', "Didn't produce compiler errors")
-        
+        self.assertRegexpMatches(response.content, r'Grade\D+?{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't find grade")
+        self.assertRegexpMatches(response.content, r'Reason\D+?\d+ compiler errors', "Didn't find reason for failure")        
         #Should not be unable to parse the grade (should be able to parse the grade)
         if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
             print response.content
@@ -531,7 +532,8 @@ class GraderTests(TestCase):
         
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'Grade[^0-9A-Z]+?Watchdog timer killed the test after \d+ seconds', "Didn't hit watchdog timer")
+        self.assertRegexpMatches(response.content, r'Grade\D+?{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't hit watchdog timer")
+        self.assertRegexpMatches(response.content, r'Reason[^A-Z]+?Watchdog timer killed the test after \d+ seconds', "Didn't hit watchdog timer")
         
         #Should not be unable to parse the grade (should be able to parse the grade)
         if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
@@ -562,9 +564,10 @@ class GraderTests(TestCase):
         if self.unable_to_parse_regex.search(response.content):             #pragma: no branch
             print response.content
             self.fail("Should have been able to parse grade.")
-        
+        s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         # verify the correct error message
-        self.assertRegexpMatches(response.content, r'Grade[^0-9]+0 \(Exception in thread "main"', "Didn't produce exception errors")
+        self.assertRegexpMatches(response.content, r'Grade\D+?{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't produce exception errors")
+        self.assertRegexpMatches(response.content, r'Reason[^A-Z]+?Exception in thread \"main\"', "Didn't hit exception")
 
     """
     Test picking up more than one test case failure
@@ -593,7 +596,7 @@ class GraderTests(TestCase):
             self.fail("Should have been able to parse grade.")
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         #Verify the proper grade is given
-        self.assertRegexpMatches(response.content, r'(?m)Grade[^0-9]+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
+        self.assertRegexpMatches(response.content, r'(?m)Grade\D+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
 
     """
     Test picking up a single test case failure
@@ -622,7 +625,7 @@ class GraderTests(TestCase):
             self.fail("Should have been able to parse grade.")
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         #Verify the proper grade is given
-        self.assertRegexpMatches(response.content, r'(?m)Grade[^0-9]+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
+        self.assertRegexpMatches(response.content, r'(?m)Grade\D+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
 
     """
     Test multiple test case errors
@@ -651,7 +654,7 @@ class GraderTests(TestCase):
             self.fail("Should have been able to parse grade.")
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         #Verify the proper grade is given
-        self.assertRegexpMatches(response.content, r'(?m)Grade[^0-9]+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
+        self.assertRegexpMatches(response.content, r'(?m)Grade\D+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
 
     """
     Test a single test case error out of three tests
@@ -680,7 +683,7 @@ class GraderTests(TestCase):
             self.fail("Should have been able to parse grade.")
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         #Verify the proper grade is given
-        self.assertRegexpMatches(response.content, r'(?m)Grade[^0-9]+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
+        self.assertRegexpMatches(response.content, r'(?m)Grade\D+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
     
     """
     """
@@ -708,7 +711,7 @@ class GraderTests(TestCase):
             self.fail("Should have been able to parse grade.")
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         #Verify the proper grade is given
-        self.assertRegexpMatches(response.content, r'(?m)Grade[^0-9]+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
+        self.assertRegexpMatches(response.content, r'(?m)Grade\D+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
 
     """
     """
@@ -742,7 +745,7 @@ class GraderTests(TestCase):
             self.fail("Should have been able to parse grade.")
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         #Verify the proper grade is given
-        self.assertRegexpMatches(response.content, r'(?m)Grade[^0-9]+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
+        self.assertRegexpMatches(response.content, r'(?m)Grade\D+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
     
     """
     Test a single test case that passes (no failures)
@@ -771,7 +774,7 @@ class GraderTests(TestCase):
             self.fail("Should have been able to parse grade.")
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         #Verify the proper grade is given
-        self.assertRegexpMatches(response.content, r'(?m)Grade[^0-9]+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
+        self.assertRegexpMatches(response.content, r'(?m)Grade\D+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
 
     """
     Test multiple passing test cases with no failures
@@ -800,7 +803,7 @@ class GraderTests(TestCase):
             self.fail("Should have been able to parse grade.")
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         #Verify the proper grade is given
-        self.assertRegexpMatches(response.content, r'(?m)Grade[^0-9]+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
+        self.assertRegexpMatches(response.content, r'(?m)Grade\D+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
 
     """
     """
@@ -828,7 +831,7 @@ class GraderTests(TestCase):
             self.fail("Should have been able to parse grade.")
         s = JavaSubmission.objects.get(assignment=a, pk__gt=3)
         #Verify the proper grade is given
-        self.assertRegexpMatches(response.content, r'(?m)Grade[^0-9]+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
+        self.assertRegexpMatches(response.content, r'(?m)Grade\D+{0} / {1}'.format(s.javagrade.tests_passed, s.javagrade.total_tests), "Didn't grade properly")
 
 
 """

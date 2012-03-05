@@ -16,8 +16,9 @@
 
 from django.db import models
 from django import forms
-from assignmentcollectorgrader.settings import MEDIA_ROOT
+from settings import MEDIA_ROOT
 from django.core.files.storage import Storage, FileSystemStorage
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
@@ -139,7 +140,7 @@ class GenericSubmission(models.Model):
     #course = models.ForeignKey(Course) ## TODO 2.0 remove this because it is redundant
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
-    email = models.EmailField(blank=True)
+    email = models.EmailField("Email (optional)", blank=True)
     submission_time = models.DateTimeField(auto_now_add=True)
     submission_number = models.IntegerField(default=1)
     # TODO: add fields to store the grade as tests passed and tests failed
@@ -250,7 +251,7 @@ class JavaSubmissionForm(forms.ModelForm):
     
     class Meta:
         model = JavaSubmission
-        fields = ('first_name', 'last_name', 'file')
+        fields = ('first_name', 'last_name', 'email', 'file')
         
 class JavaSubmissionFormP(JavaSubmissionForm):
     passkey = forms.CharField(max_length=25, required=True)
@@ -271,23 +272,25 @@ class JavaSubmissionFormP(JavaSubmissionForm):
         return self.cleaned_data
     
     class Meta(JavaSubmissionForm.Meta):
-        fields = ('first_name', 'last_name', 'passkey', 'file')
+        fields = ('first_name', 'last_name', 'email', 'passkey', 'file')
         
         
 ###########################
 ###   Signal Handlers   ###
 ###########################
 
-#@receiver(pre_delete, sender=JavaSubmission)
+@receiver(pre_delete, sender=JavaSubmission)
 def delete_submission_files(sender, **kwargs):
     try:
         if kwargs['instance'].file:
             kwargs['instance'].file.delete()
         
-        if kwargs['instance'].grade_log:
-            kwargs['instance'].grade_log.delete()
-    
+        if kwargs['instance'].javagrade:
+            if kwargs['instance'].javagrade.grade_log:
+                kwargs['instance'].javagrade.grade_log.delete()
+    except ObjectDoesNotExist as dne:                   # pragma: no cover
+        print "Error in delete_submission_files: ", dne
     except WindowsError as (winerror, strerror):        # pragma: no cover
         print "Error in delete_submission_files: ", winerror, strerror
-    except OSError:                                     # pragma: no cover
-        print "Error in delete_submission_files"
+    except OSError as ose:                              # pragma: no cover
+        print "Error in delete_submission_files: ", ose
