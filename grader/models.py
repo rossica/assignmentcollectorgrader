@@ -27,28 +27,40 @@ import os, os.path, re, shutil, subprocess, tempfile, time, zipfile
 class GenericGrade(models.Model):
     class Meta:
         abstract = True
-    error = models.IntegerField(default=0)
+    error = models.IntegerField("Error Code", default=0)
     # Error codes:
     # -1 - unable to parse/unknown error
     # 0 - no error. Success
     # 1 - compiler error(s)
     # 2 - unhandled Exception
     # 3 - watchdog timer hit
-    error_text = models.CharField(max_length=255, default="")
+    error_text = models.CharField("Error string", max_length=255, default="")
 
 class JavaGrade(GenericGrade):
     def filepath(self, filename):
         empty, extension = os.path.splitext(filename)
-        file, empty = os.path.splitext(self.submission.file.path)
-        return "{0}{1}".format(file, extension)
+        return "submissions/{0}/{1}/{2}/{3}/{4}_{5}_{6}{7}".format(self.submission.assignment.course.year, 
+                                                                   self.submission.assignment.course.term, 
+                                                                   self.submission.assignment.course.course_num, 
+                                                                   self.submission.assignment.name, 
+                                                                   self.submission.last_name, 
+                                                                   self.submission.first_name, 
+                                                                   self.submission.submission_number, 
+                                                                   extension)
+    
+    def __unicode__(self):
+        if self.error:
+            return "({2})".format(self.tests_passed, self.total_tests, self.error_text)
+        else:
+            return "{0}/{1}".format(self.tests_passed, self.total_tests)
 
-    submission = models.OneToOneField(JavaSubmission)
-    grade_log = models.FileField(blank=True, upload_to=filepath)
+    submission = models.OneToOneField(JavaSubmission, help_text="Submission that generated this grade")
+    grade_log = models.FileField(blank=True, upload_to=filepath, help_text="Contains the output of compilation and test execution.")
     total_tests = models.IntegerField(default=0)
     tests_passed = models.IntegerField(default=0)
     tests_failed = models.IntegerField(default=0)
     test_errors = models.IntegerField(default=0)
-    junit_return = models.IntegerField(default=0)
+    junit_return = models.IntegerField("JUnit/javac Return code", help_text="Non-zero if either compilation or any tests failed.", default=0)
     
     def _extract_files(self, assignment, submission):
         # create a temporary directory

@@ -82,7 +82,7 @@ class Course(models.Model):
     year = models.IntegerField(default=datetime.datetime.now().year, help_text='The year this course is offered.')
     term = models.CharField(max_length=6, choices=TERM_CHOICES, help_text='The term this course is offered.')
     email = models.EmailField("Email to send grades to", blank=True)
-    creator = models.ForeignKey(User, default=1)
+    creator = models.ForeignKey(User, default=1,) #  on_delete=models.SET_DEFAULT
     
 class GenericAssignment(models.Model):
     def testfileurl(self, filename):
@@ -101,7 +101,7 @@ class GenericAssignment(models.Model):
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access. Overrides any specified Course passkey.')
     max_submissions = models.IntegerField(default=0, help_text='Maximum allowed submissions per student. 0 for unlimited.')
     allow_late = models.BooleanField("Allow Late Submissions", default=False)
-    creator = models.ForeignKey(User, default=1)
+    creator = models.ForeignKey(User, default=1,) #  on_delete=models.SET_DEFAULT
     
     class Meta:
         abstract = True
@@ -124,8 +124,8 @@ class JavaAssignment(GenericAssignment):
                        (3, 'Both')
                        )
     test_file = models.FileField(upload_to=GenericAssignment.testfileurl, storage=AssignmentFileStorage(), blank=True)
-    java_cmd = models.CharField(help_text="Command line parameters to the java interpreter. Do not change this unless you know exactly what you are doing.", max_length=100, default="-Xms32m -Xmx32m junit.textui.TestRunner")
-    options = models.IntegerField("Optional Features", default=1, choices=OPTIONS_CHOICES)
+    java_cmd = models.CharField("java command line", help_text="Command line parameters to the java interpreter. Do not change this unless you know exactly what you are doing.", max_length=100, default="-Xms32m -Xmx32m junit.textui.TestRunner")
+    options = models.IntegerField("Optional Features", help_text="Optional processing to do after saving an uploaded submission.", default=1, choices=OPTIONS_CHOICES)
     watchdog_wait = models.IntegerField("Watchdog timer", help_text="Time to wait, in seconds, for test execution. Kills the test if it's still executing after this much time.", default=30)
 
 class GenericSubmission(models.Model):

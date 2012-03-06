@@ -42,7 +42,24 @@ class CourseAdmin(admin.ModelAdmin):
     list_filter = ('year', 'term', 'course_num',)
 #    list_display_links = ('__unicode__', 'course_num', 'term', 'year', )
     search_fields = ('^course_num', )
-
+    
+    def save_model(self, request, obj, form, change):
+        if change == False:
+            obj.creator = request.user
+        obj.save()
+    
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            if change == False:
+                instance.creator = request.user
+            instance.save()
+    
+    def queryset(self, request):
+        qs = super(CourseAdmin, self).queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(creator=request.user)
 
 
 class AssignmentAdmin(admin.ModelAdmin):
@@ -61,7 +78,7 @@ class AssignmentAdmin(admin.ModelAdmin):
         ('Assignment Passkey', {
             'fields': ('passkey',)
         }),
-        ('Grader Settings', {
+        ('Test File', {
             'fields':('test_file', )
         }),
         ('Advanced', {
@@ -73,6 +90,25 @@ class AssignmentAdmin(admin.ModelAdmin):
     list_filter = ('course', 'due_date')
     search_fields = ('name', )
     actions = ['display_grades']
+    
+    def save_model(self, request, obj, form, change):
+        if change == False:
+            obj.creator = request.user
+        obj.save()
+    
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            if change == False:
+                instance.creator = request.user
+            instance.save()
+    
+    def queryset(self, request):
+        qs = super(AssignmentAdmin, self).queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(creator=request.user)
+    
     def display_grades(self, request, queryset):
         from django.shortcuts import render_to_response
         import datetime
@@ -107,15 +143,15 @@ class SubmissionAdmin(admin.ModelAdmin):
             'fields': ('first_name', 'last_name', 'submission_time', 'assignment', )
         }),
         ('Submitted File', {
-            'fields':('file', )#'grade_log',)
+            'fields':('file', )
         }),
 #        ('Grade', {
-#            'fields':('grade',)
+#            'fields':('javagrade',)
 #        }),
     )
-    list_display = ('__unicode__', 'last_name', 'first_name', 'assignment', 'submission_time', )#'grade')
-    list_filter = ('assignment', 'submission_time', 'last_name',)
-    readonly_fields = ('first_name', 'last_name', 'assignment', 'submission_time', )#'grade',)
+    list_display = ('__unicode__', 'last_name', 'first_name', 'assignment', 'submission_time', 'javagrade')
+    list_filter = ('assignment', 'assignment__course', 'submission_time', 'last_name',)
+    readonly_fields = ('first_name', 'last_name', 'assignment', 'submission_time', 'javagrade')
     
 
 admin.site.register(Course, CourseAdmin)

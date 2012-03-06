@@ -68,7 +68,7 @@ def view_submission(request, year, term, course_id, assn_name, sub_id):
     sub = get_object_or_404(JavaSubmission, id=sub_id)
     grade = sub.javagrade
     
-    if grade.grade_log:
+    if grade and grade.grade_log:
         if grade.grade_log.size < 2097152:
             grader_output = grade.grade_log.read()
         else:
@@ -134,8 +134,8 @@ def submit_assignment(request, year, term, course_id, assn_name):
             if assn.max_submissions > 0:
                 grader_output += "You have {0} attempts remaining for this assignment.\n\n".format(assn.max_submissions - count - 1)
             
-            # If this assignment contains a test file
-            if assn.test_file:
+            # Grade this assignment only if grading is turned on.
+            if (assn.options & 1):
                 # append the grader output to send it to the user.
                 grader = JavaGrade()
                 grader_output += grader.grade(assn, submission)
