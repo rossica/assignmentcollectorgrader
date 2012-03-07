@@ -114,15 +114,17 @@ class JavaGrade(GenericGrade):
             grader_jar.close() 
         return (java_files, temp_dir)
     
-    def _compile(self, java_files, dir, output_handle):
+    def _compile(self, cmd_parms, java_files, dir, output_handle):
         ## add the location of JUnit to the classpath, or environment
         if 'CLASSPATH' in os.environ:
             if JUNIT_ROOT not in os.environ['CLASSPATH']:
-                os.environ['CLASSPATH'] = os.environ['CLASSPATH'] + os.pathsep + '.' + os.pathsep + JUNIT_ROOT # os.pathsep + 
+                os.environ['CLASSPATH'] = os.environ['CLASSPATH'] + os.pathsep + '.' + os.pathsep + JUNIT_ROOT
         else:
-            os.environ['CLASSPATH'] =  '.' + os.pathsep + JUNIT_ROOT # os.pathsep + os.pathsep +
+            os.environ['CLASSPATH'] =  '.' + os.pathsep + JUNIT_ROOT
         ## Prepare a list of arguments starting with the program name
-        args = ['javac',  ] #  '-verbose', 
+        args = ['javac',  ]
+        ## Append compiler options
+        args.extend(cmd_parms)
         ## Append the java files to the list of args
         args.extend(java_files)
         ## compile and return the return code
@@ -193,7 +195,7 @@ class JavaGrade(GenericGrade):
         output_handle, output_path = tempfile.mkstemp(suffix=".log", dir=temp_dir, text=True)
         
         ## actually compile
-        javac = self._compile(java_files, temp_dir, output_handle)
+        javac = self._compile(assignment.javac_cmd.split(), java_files, temp_dir, output_handle)
         
         # If compilation is successful, run the tests
         if javac == 0: 

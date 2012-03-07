@@ -68,13 +68,12 @@ class Course(models.Model):
     ('spring', 'Spring'),
     ('summer', 'Summer'),
     )
-    #@models.permalink
+    @models.permalink
     def get_absolute_url(self):
-        #return ('view_course', (), {
-        #        'year': self.year,
-        #        'term':self.term,
-        #        'course_id':self.course_num,})
-        return "/{0}/{1}/{2}/".format(self.year, self.term, self.course_num)
+        return ('collector.views.view_course', (), {
+                'year': self.year,
+                'term':self.term,
+                'course_id':self.course_num,})
     course_num = models.CharField("Course Number", max_length=8, help_text='For example: CS260.')
     course_title = models.CharField("Course Title", max_length=25, help_text='For example: Data Structures.')
     description = models.TextField(blank=True, verbose_name='Course Description')
@@ -82,7 +81,10 @@ class Course(models.Model):
     year = models.IntegerField(default=datetime.datetime.now().year, help_text='The year this course is offered.')
     term = models.CharField(max_length=6, choices=TERM_CHOICES, help_text='The term this course is offered.')
     email = models.EmailField("Email to send grades to", blank=True)
-    creator = models.ForeignKey(User, default=1,) #  on_delete=models.SET_DEFAULT
+    creator = models.ForeignKey(User, default=1, help_text="User who owns this Course and administrates it. (i.e. You!)") #  on_delete=models.SET_DEFAULT
+    
+    class Meta:
+        unique_together=('course_num', 'year', 'term')
     
 class GenericAssignment(models.Model):
     def testfileurl(self, filename):
@@ -101,7 +103,7 @@ class GenericAssignment(models.Model):
     passkey = models.CharField(max_length=25, blank=True, verbose_name='Access passkey', help_text='A <i>secret</i> passkey to allow submission access. Overrides any specified Course passkey.')
     max_submissions = models.IntegerField(default=0, help_text='Maximum allowed submissions per student. 0 for unlimited.')
     allow_late = models.BooleanField("Allow Late Submissions", default=False)
-    creator = models.ForeignKey(User, default=1,) #  on_delete=models.SET_DEFAULT
+    creator = models.ForeignKey(User, default=1, help_text="User who owns this Assignment and administrates it. (i.e. You!)") #  on_delete=models.SET_DEFAULT
     
     class Meta:
         abstract = True
@@ -109,14 +111,13 @@ class GenericAssignment(models.Model):
 
 class JavaAssignment(GenericAssignment):
     # TODO: 2.0 Rename to JARAssignment
-    #@models.permalink
+    @models.permalink
     def get_absolute_url(self):
-        #return ('view_assignment', (), {
-        #        'year': self.course.year,
-        #        'term':self.course.term,
-        #        'course_id':self.course.course_num,
-        #        'assn_name':self.name})
-        return "/{0}/{1}/{2}/{3}/".format(self.course.year, self.course.term, self.course.course_num, self.name)
+        return ('collector.views.view_assignment', (), {
+                'year': self.course.year,
+                'term': self.course.term,
+                'course_id': self.course.course_num,
+                'assn_name': self.name})
     OPTIONS_CHOICES = (
                        (0, 'None'),
                        (1, 'Automated Grading'),
@@ -124,7 +125,8 @@ class JavaAssignment(GenericAssignment):
                        (3, 'Both')
                        )
     test_file = models.FileField(upload_to=GenericAssignment.testfileurl, storage=AssignmentFileStorage(), blank=True)
-    java_cmd = models.CharField("java command line", help_text="Command line parameters to the java interpreter. Do not change this unless you know exactly what you are doing.", max_length=100, default="-Xms32m -Xmx32m junit.textui.TestRunner")
+    java_cmd = models.CharField("java runtime command line", help_text="Command line parameters to the java interpreter. Do not change this unless you know exactly what you are doing.", max_length=100, default="-Xms32m -Xmx32m junit.textui.TestRunner")
+    javac_cmd = models.CharField("java compiler command line", help_text="Command line parameters to the java compiler. Do not change this unless you know exactly what you are doing.", max_length=100, default="-g")
     options = models.IntegerField("Optional Features", help_text="Optional processing to do after saving an uploaded submission.", default=1, choices=OPTIONS_CHOICES)
     watchdog_wait = models.IntegerField("Watchdog timer", help_text="Time to wait, in seconds, for test execution. Kills the test if it's still executing after this much time.", default=30)
 
@@ -152,15 +154,14 @@ class GenericSubmission(models.Model):
         
 class JavaSubmission(GenericSubmission):
     # TODO: 2.0 Rename to JARSubmission
-    #@models.permalink
+    @models.permalink
     def get_absolute_url(self):
-        #return ('collector.views.view_submission', [], {
-        #        'year': self.assignment.course.year,
-        #        'term':self.assignment.course.term,
-        #        'course_id':self.assignment.course.course_num,
-        #        'assn_name':self.assignment.name,
-        #        'sub_id':self.id})
-        return "/{0}/{1}/{2}/{3}/submissions/{4}/".format(self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.id)
+        return ('collector.views.view_submission', (), {
+                'year': self.assignment.course.year,
+                'term': self.assignment.course.term,
+                'course_id': self.assignment.course.course_num,
+                'assn_name': self.assignment.name,
+                'sub_id': self.id})
     assignment = models.ForeignKey(JavaAssignment)
     file = models.FileField(upload_to=GenericSubmission.fileurl)
     #grade_log = models.FileField(blank=True, upload_to=GenericSubmission.fileurl)

@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf.urls.defaults import *
-from assignmentcollectorgrader.collector.views import course_index, specific_term_course_index, view_course, view_assignment, view_submission, submit_assignment, view_about
+from collector.views import course_index, specific_term_course_index, view_course, view_assignment, view_submission, submit_assignment, view_about
 
 urlpatterns = patterns('',
     # Example:

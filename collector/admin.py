@@ -1,5 +1,5 @@
 #    Assignment Collector/Grader - a Django app for collecting and grading code
-#    Copyright (C) 2010,2011  Anthony Rossi <anro@acm.org>
+#    Copyright (C) 2010,2011,2012  Anthony Rossi <anro@acm.org>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -37,6 +37,10 @@ class CourseAdmin(admin.ModelAdmin):
         ('Year and Term', {
             'fields':('year', 'term',)
         }),
+        ('Owner', {
+            'classes':('collapse',),
+            'fields':('creator',)
+        }),
     )
     list_display = ('__unicode__', 'course_num', 'term', 'year', )
     list_filter = ('year', 'term', 'course_num',)
@@ -44,21 +48,27 @@ class CourseAdmin(admin.ModelAdmin):
     search_fields = ('^course_num', )
     
     def save_model(self, request, obj, form, change):
+        # If creating this object (not UPDATEing it)
         if change == False:
-            obj.creator = request.user
+            obj.creator = request.user # save the current user as creator
         obj.save()
     
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
+        # For all objects being saved
         for instance in instances:
+            # If this object is being created
             if change == False:
+                # set the creator as the current user
                 instance.creator = request.user
             instance.save()
     
     def queryset(self, request):
         qs = super(CourseAdmin, self).queryset(request)
+        # Allow superusers to see all Courses
         if request.user.is_superuser:
             return qs
+        # otherwise, show only Courses created by current user
         return qs.filter(creator=request.user)
 
 
@@ -83,8 +93,12 @@ class AssignmentAdmin(admin.ModelAdmin):
         }),
         ('Advanced', {
             'classes': ('collapse',),
-            'fields':('java_cmd', 'options', 'watchdog_wait')
+            'fields':('java_cmd', 'javac_cmd', 'options', 'watchdog_wait', 'creator')
         }),
+#        ('Owner', {
+#            'classes':('collapse',),
+#            'fields':('creator',)
+#        }),
     )
     list_display = ('__unicode__', 'course', 'due_date', )
     list_filter = ('course', 'due_date')
@@ -92,21 +106,28 @@ class AssignmentAdmin(admin.ModelAdmin):
     actions = ['display_grades']
     
     def save_model(self, request, obj, form, change):
+        # If creating this object (not UPDATEing it)
         if change == False:
+            # save the current user as creator
             obj.creator = request.user
         obj.save()
     
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
+        # For all objects being saved
         for instance in instances:
+            # If this object is being created
             if change == False:
+                # set the creator as the current user
                 instance.creator = request.user
             instance.save()
     
     def queryset(self, request):
         qs = super(AssignmentAdmin, self).queryset(request)
+        # Allow superusers to see all Assignments
         if request.user.is_superuser:
             return qs
+        # otherwise, show only Assignments created by current user
         return qs.filter(creator=request.user)
     
     def display_grades(self, request, queryset):
@@ -114,7 +135,7 @@ class AssignmentAdmin(admin.ModelAdmin):
         import datetime
         grades = []
         # Show grades for every assignment selected
-        for assn in queryset:
+        for assn in queryset.group_by('course'):
             # Only add assignments that have started. No point showing assignments that can't even be turned in yet.
             if assn.start_date < datetime.datetime.now():
                 warning = ""
