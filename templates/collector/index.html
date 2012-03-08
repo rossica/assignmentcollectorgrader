@@ -25,16 +25,30 @@
 			<title>Courses</title>
 		{% endif %}
 		{% if specific_term_course_index %}
-			<title>Courses for {{specific_term_course_index.1|lower|capfirst}} {{specific_term_course_index.0}}</title>
+			<title>Courses for {% if specific_term_course_index.1 %}{{specific_term_course_index.1|lower|capfirst}}{% endif%} {{specific_term_course_index.0}}</title>
 		{%endif%}
 	</head>
 	
 	<body>
-        <ul>
-    		{% for course in course_list %}
-    			<a href="{% url collector.views.view_course course.year course.term course.course_num %}" <li>{{course.course_num}} {{course.course_title}}</li></a>
-    		{% endfor %}
-    	</ul>
+		{% regroup course_list by year as courses_by_year %}
+		<ul>
+			{% for year in courses_by_year %}
+			<li> <h3><u>{{year.grouper}}</u></h3>
+				{% regroup year.list by term as courses_by_term %}
+				<ul>
+					{% for term in courses_by_term %}
+					<li> <u>{{term.grouper|capfirst}}</u>
+						<ul>
+							{% for item in term.list %}
+							<li><a href="{% url collector.views.view_course item.year item.term item.course_num %}">{{item.course_num}} {{item.course_title}}</li></a>
+							{% endfor %}
+						</ul>
+					</li>
+					{% endfor %}
+				</ul>
+			</li>
+			{% endfor%}
+		</ul>
 	</body>
 	
 

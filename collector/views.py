@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response, get_object_or_404, get_list_or_404
 from django.http import HttpResponseRedirect, Http404
 
 from django.core.files import File
@@ -28,13 +28,16 @@ from grader.models import *
 import os, os.path, re, shutil, subprocess, tempfile, datetime, time, zipfile
     
 
-def course_index(request):
-    list = Course.objects.all();
+def course_index(request, **kwargs):
+    if kwargs.has_key('year') and kwargs.has_key('term'):
+        list = get_list_or_404(Course, year=kwargs['year'], term=kwargs['term'])
+        return render_to_response('collector/index.html', {'course_list':list, 'specific_term_course_index':(kwargs['year'],kwargs['term']), })
+    elif kwargs.has_key('year'):
+        list = get_list_or_404(Course, year=kwargs['year'])
+        return render_to_response('collector/index.html', {'course_list':list, 'specific_term_course_index':(kwargs['year'],None), })
+    else:
+        list = Course.objects.all().order_by('year', 'term')
     return render_to_response('collector/index.html', {'course_list':list, 'course_index':'a',})
-
-def specific_term_course_index(request, year, term):
-    list = Course.objects.filter(year=year, term=term.lower())
-    return render_to_response('collector/index.html', {'course_list':list, 'specific_term_course_index':(year,term), })
 
 def view_about(request):
     return render_to_response('collector/about.html', {'major_version':MAJOR_VERSION, 'minor_version':MINOR_VERSION, })
@@ -66,19 +69,24 @@ def view_submission(request, year, term, course_id, assn_name, sub_id):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(JavaAssignment, course=c.pk, name=assn_name)
     sub = get_object_or_404(JavaSubmission, id=sub_id)
-    grade = sub.javagrade
     
-    if grade and grade.grade_log:
-        if grade.grade_log.size < 2097152:
-            grader_output = grade.grade_log.read()
+    grade = None
+    if JavaGrade.objects.filter(submission=sub).exists():
+        grade = sub.javagrade
+        
+        if grade.grade_log:
+            if grade.grade_log.size < 2097152:
+                grader_output = grade.grade_log.read()
+            else:
+                grader_output = ''.join(grade.grade_log.readlines(100000))
+                grader_output +="\n=================================================================================="
+                grader_output +="\n Grade results too long, truncating.............................................\n"
+                grader_output +="==================================================================================\n"
+                grade.grade_log.seek(-100000, os.SEEK_END)
+                grader_output += ''.join(grade.grade_log.readlines(100000))
+                grader_output += "\n Grade results are too long. Please remove any extraneous output (println(), etc.) before submitting again."
         else:
-            grader_output = ''.join(grade.grade_log.readlines(100000))
-            grader_output +="\n=================================================================================="
-            grader_output +="\n Grade results too long, truncating.............................................\n"
-            grader_output +="==================================================================================\n"
-            grade.grade_log.seek(-100000, os.SEEK_END)
-            grader_output += ''.join(grade.grade_log.readlines(100000))
-            grader_output += "\n Grade results are too long. Please remove any extraneous output (println(), etc.) before submitting again."
+            grader_output = "No grade results to display."
     else:
         grader_output = "No grade results to display."
     

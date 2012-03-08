@@ -135,7 +135,7 @@ class AssignmentAdmin(admin.ModelAdmin):
         import datetime
         grades = []
         # Show grades for every assignment selected
-        for assn in queryset.group_by('course'):
+        for assn in queryset.order_by('course'):
             # Only add assignments that have started. No point showing assignments that can't even be turned in yet.
             if assn.start_date < datetime.datetime.now():
                 warning = ""
