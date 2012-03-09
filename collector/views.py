@@ -19,6 +19,7 @@ from django.http import HttpResponseRedirect, Http404
 
 from django.core.files import File
 from django.core.urlresolvers import reverse
+from django.core.mail import EmailMessage
 
 from collector.models import *
 from settings import JUNIT_ROOT
@@ -147,6 +148,29 @@ def submit_assignment(request, year, term, course_id, assn_name):
                 # append the grader output to send it to the user.
                 grader = JavaGrade()
                 grader_output += grader.grade(assn, submission)
+                # If the user gave an email address, send them the grade log
+                if submission.email:
+                    subject = "({0}, {1}) {2}-{3} GRADE RESULTS   ----    Submitted {4}".format(submission.last_name, 
+                                                                                               submission.first_name, 
+                                                                                               c.course_num, 
+                                                                                               assn.name, 
+                                                                                               submission.submission_time.ctime())
+                     # if the grade_log is less than 200K, send it in the body
+                    if len(grader_output) < 205000:
+                        email = EmailMessage(subject,
+                                              grader_output,
+                                              c.email,
+                                              [submission.email, ],
+                                              )
+                    # Otherwise, send it as an attachment
+                    else:
+                        email = EmailMessage(subject,
+                                              "See attached file for grade results",
+                                              c.email,
+                                              [submission.email, ],
+                                              )
+                        email.attach_file(submission.javagrade.grade_log.path)
+                    email.send(fail_silently=True)
             
             return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':submission, 'grade':grader})
         

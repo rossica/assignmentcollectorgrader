@@ -89,7 +89,7 @@ class Course(models.Model):
 class GenericAssignment(models.Model):
     def testfileurl(self, filename):
         extension = os.path.splitext(filename)
-        return "tests/{0}/{1}/{2}/{3}/{4}".format(self.course.year, self.course.term, self.course.course_num, self.name, filename)
+        return "tests{0}{1}".format(self.get_absolute_url(), filename)
     
     def __unicode__(self):
         #return "{0}: {1}".format(self.course.__unicode__(), self.name)
@@ -133,7 +133,7 @@ class JavaAssignment(GenericAssignment):
 class GenericSubmission(models.Model):
     def fileurl(self, filename):
         extension = os.path.splitext(filename)
-        return "submissions/{0}/{1}/{2}/{3}/{4}_{5}_{6}{7}".format(self.assignment.course.year, self.assignment.course.term, self.assignment.course.course_num, self.assignment.name, self.last_name, self.first_name, self.submission_number, extension[1])
+        return "submissions{0}{1}_{2}_{3}{4}".format(self.assignment.get_absolute_url(), self.last_name, self.first_name, self.submission_number, extension[1])
     
     def __unicode__(self):
         return "{0} {1}: {2} #{3}".format(self.last_name, self.first_name, self.assignment.__unicode__(), self.submission_number)

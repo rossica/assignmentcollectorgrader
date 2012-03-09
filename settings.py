@@ -39,6 +39,21 @@ DATABASES = {
     }
 }
 
+# Email Backends
+# Use this for development. Comment the line below for production deployment
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Uncomment the below lines for a production deployment
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# Email settings. Uncomment these and configure them for deployment 
+EMAIL_HOST = 'localhost'
+#EMAIL_HOST_USER = ''
+#EMAIL_HOST_PASSWORD = ''
+#EMAIL_PORT = 25
+#EMAIL_USE_TLS
+
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.

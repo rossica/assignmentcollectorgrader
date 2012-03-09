@@ -38,15 +38,7 @@ class GenericGrade(models.Model):
 
 class JavaGrade(GenericGrade):
     def filepath(self, filename):
-        empty, extension = os.path.splitext(filename)
-        return "submissions/{0}/{1}/{2}/{3}/{4}_{5}_{6}{7}".format(self.submission.assignment.course.year, 
-                                                                   self.submission.assignment.course.term, 
-                                                                   self.submission.assignment.course.course_num, 
-                                                                   self.submission.assignment.name, 
-                                                                   self.submission.last_name, 
-                                                                   self.submission.first_name, 
-                                                                   self.submission.submission_number, 
-                                                                   extension)
+        return self.submission.fileurl(filename)
     
     def __unicode__(self):
         if self.error:
