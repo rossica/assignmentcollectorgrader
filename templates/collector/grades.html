@@ -1,6 +1,6 @@
 {% comment %}
     Assignment Collector/Grader - a Django app for collecting and grading code
-    Copyright (C) 2010,2011  Anthony Rossi <anro@acm.org>
+    Copyright (C) 2010,2011,2012  Anthony Rossi <anro@acm.org>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
@@ -31,20 +31,16 @@
 			</tr>
 			<tr>
 				<th bgcolor=FFFFCC>
-					<h4>{{assn.name}}</h4>
-					
+					<h4>{{assn.name}}<br>
+					{% if warning %}
+						<font color=red>{{warning}}</font>
+					{% endif %}
+					</h4>
 				</th>
 			</tr>
 			<tr align=left><td>
 					Due: {{assn.due_date}}
 					</td></tr>
-			{% if warning %}
-			<tr>
-				<th>
-					<h4><font color=red>{{warning}}</font></h4>
-				</th>
-			</tr>
-			{% endif %}
 			<tr>
 			<td>
 			<table border=0 cellpadding=4 cellspacing=2 rules=all>
@@ -62,6 +58,15 @@
 					<td align=center>{{g.submission_number}}</td>
 					<td align=center>{{g.javagrade.tests_passed}}/{{g.javagrade.total_tests}}</td>
 					<td>{{g.javagrade.error_text}}</td>
+				</tr>
+				{% empty %}
+				</table>
+				</td>
+				</tr>
+				<tr>
+					<td>
+						Sorry, no submissions at this time.
+					</td>
 				</tr>
 			{% endfor %}
 			</table>

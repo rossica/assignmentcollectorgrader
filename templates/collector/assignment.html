@@ -1,6 +1,6 @@
 {% comment %}
     Assignment Collector/Grader - a Django app for collecting and grading code
-    Copyright (C) 2010,2011  Anthony Rossi <anro@acm.org>
+    Copyright (C) 2010,2011,2012  Anthony Rossi <anro@acm.org>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
@@ -16,9 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 {% endcomment %}
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
-                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> 
+<html>
 
     <head>
         {% if submission %}
@@ -67,7 +66,7 @@
             <h3>Grade Results</h3>
         {% endif %}
         <hr>
-        <p>{{grader_output|linebreaks}}</p>
+        <p><code>{{grader_output|linebreaks}}</code></p>
         <br>
         {% if submission %}
             <p>Please bookmark the link below to view these results again later:<br>

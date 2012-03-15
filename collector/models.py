@@ -282,16 +282,19 @@ class JavaSubmissionFormP(JavaSubmissionForm):
 
 @receiver(pre_delete, sender=JavaSubmission)
 def delete_submission_files(sender, **kwargs):
+    from grader.models import JavaGrade
     try:
         if kwargs['instance'].file:
             kwargs['instance'].file.delete()
         
-        if kwargs['instance'].javagrade:
-            if kwargs['instance'].javagrade.grade_log:
-                kwargs['instance'].javagrade.grade_log.delete()
+        if JavaGrade.objects.filter(submission=kwargs['instance']).count() == 1:
+            g = JavaGrade.objects.get(submission=kwargs['instance'])
+            if g.grade_log:
+                g.grade_log.delete()
+
     except ObjectDoesNotExist as dne:                   # pragma: no cover
-        print "Error in delete_submission_files: ", dne
+        print "DNE Error in delete_submission_files: ", dne
     except WindowsError as (winerror, strerror):        # pragma: no cover
-        print "Error in delete_submission_files: ", winerror, strerror
+        print "Windows Error in delete_submission_files: ", winerror, strerror
     except OSError as ose:                              # pragma: no cover
-        print "Error in delete_submission_files: ", ose
+        print "OSError in delete_submission_files: ", ose

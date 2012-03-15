@@ -921,6 +921,7 @@ class AssignmentFormTests(TestCase):
                 'due_date':datetime.datetime.now() + datetime.timedelta(hours=2),
                 'max_submissions': 10,
                 'java_cmd':"-Xms32m -Xmx32m junit.textui.TestRunner",
+                'javac_cmd':"-g",
                 'options': 1,
                 'creator': 1,
                 'watchdog_wait':30,

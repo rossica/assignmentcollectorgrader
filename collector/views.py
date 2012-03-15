@@ -144,7 +144,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
                 grader_output += "You have {0} attempts remaining for this assignment.\n\n".format(assn.max_submissions - count - 1)
             
             # Grade this assignment only if grading is turned on.
-            if (assn.options & 1):
+            if (assn.options & 1) and assn.test_file:
                 # append the grader output to send it to the user.
                 grader = JavaGrade()
                 grader_output += grader.grade(assn, submission)
@@ -178,7 +178,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
             return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form}) 
     
     else: # HTTP GET instead of POST
-        return HttpResponseRedirect(reverse('assignmentcollectorgrader.collector.views.view_assignment', args=(c.year, c.term, c.course_num, assn.name,)))
+        return HttpResponseRedirect(reverse('collector.views.view_assignment', args=(c.year, c.term, c.course_num, assn.name,)))
         #if datetime.datetime.now() < assn.start_date:
         #    return render_to_response('collector/assignment.html', {'assignment':assn, })
         #else:

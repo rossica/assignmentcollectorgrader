@@ -42,7 +42,7 @@ class JavaGrade(GenericGrade):
     
     def __unicode__(self):
         if self.error:
-            return "({2})".format(self.tests_passed, self.total_tests, self.error_text)
+            return "({0})".format(self.error_text)
         else:
             return "{0}/{1}".format(self.tests_passed, self.total_tests)
 
@@ -119,6 +119,8 @@ class JavaGrade(GenericGrade):
         args.extend(cmd_parms)
         ## Append the java files to the list of args
         args.extend(java_files)
+        ## Pretty Print: To the grade_log a header listing any messages here belonging to the compiler
+        os.write(output_handle, "Compiler Output=================================================\n")
         ## compile and return the return code
         return subprocess.call(args=args, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=dir, )
     
@@ -151,13 +153,13 @@ class JavaGrade(GenericGrade):
                 
             # Check the whole output for an exception
             if not parsed:
-                regexcep = re.compile(r"^Exception\s+in\s+thread\s+\"main\"\s+(?P<exception>[\w\._-]+?):\s+(?P<class>[\w\._-/]+?)")
+                regexcep = re.compile(r"^Exception\s+in\s+thread\s+\"main\"\s+(?P<exception>[-\w._]+?):\s+(?P<class>[-\w._/]+?)$")
                 for line in junit_output:
                     match = regexcep.search(line)
                     if match:
                         results = match.groupdict()
                         self.error = 2
-                        self.error_text = "Exception in thread \"main\" {0}: {1})".format(results['exception'], results['class'])
+                        self.error_text = "Exception in thread \"main\" {0}: {1}".format(results['exception'], results['class'])
                         parsed = True
                         break
                     
@@ -196,6 +198,9 @@ class JavaGrade(GenericGrade):
             args2.extend(assignment.java_cmd.split())
             args2.append(name)
             #print args2 # DEBUG
+            # Pretty Print: to the grade_log that these messages belong to JUnit
+            os.write(output_handle, "\nJUnit Test Output===============================================\n")
+            # Run the JUnit tests in a subprocess
             java_proc = subprocess.Popen(args=args2, shell=False, stdout=output_handle, stderr=subprocess.STDOUT, cwd=temp_dir, )
             ## Have a watchdog timer in case of infinite loops in code.
             itercount = 0
