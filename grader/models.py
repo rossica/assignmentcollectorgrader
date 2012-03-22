@@ -17,6 +17,8 @@
 from django.db import models
 from django import forms
 from django.core.files import File
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 from settings import MEDIA_ROOT, JUNIT_ROOT
 from collector.models import JavaSubmission, GenericSubmission
@@ -254,3 +256,16 @@ class JavaGrade(GenericGrade):
         shutil.rmtree(temp_dir)
         ## return the output
         return ''.join(output)
+    
+@receiver(pre_delete, sender=JavaGrade)
+def delete_grader_files(sender, **kwargs):
+    try:
+        if kwargs['instance'].grade_log:
+            kwargs['instance'].grade_log.delete()
+
+    except ObjectDoesNotExist as dne:                   # pragma: no cover
+        print "DNE Error in delete_grader_files: ", dne
+    except WindowsError as (winerror, strerror):        # pragma: no cover
+        print "Windows Error in delete_grader_files: ", winerror, strerror
+    except OSError as ose:                              # pragma: no cover
+        print "OSError in delete_grader_files: ", ose

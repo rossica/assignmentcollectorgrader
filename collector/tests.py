@@ -1214,6 +1214,10 @@ class SubmissionFormTests(TestCase):
         sfp = JavaSubmissionFormP(self.data, self.file_data, instance=s)
         
         self.assertFalse(sfp.is_valid(), "Should not validate either password")
+        
+class AdminTests(TestCase):
+    fixtures = ['users.json', ]
+    
 
 class MiscTests(TestCase):
     longMessage = True
