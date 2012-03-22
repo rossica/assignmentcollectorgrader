@@ -171,7 +171,7 @@ class SubmissionAdmin(admin.ModelAdmin):
 #        }),
     )
     list_display = ('__unicode__', 'last_name', 'first_name', 'assignment', 'submission_time', 'javagrade')
-    list_filter = ('assignment', 'assignment__course', 'submission_time', 'last_name',)
+    list_filter = ('assignment', 'assignment__course', 'submission_time', 'last_name', 'submission_number')
     readonly_fields = ('first_name', 'last_name', 'assignment', 'submission_time', 'javagrade')
     
 

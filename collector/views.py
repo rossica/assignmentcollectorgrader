@@ -149,13 +149,13 @@ def submit_assignment(request, year, term, course_id, assn_name):
                 grader_output += grader.grade(assn, submission)
                 # If the user gave an email address, send them the grade log
                 if submission.email:
-                    subject = "{2}, {3}--{6}--{0}/{1}--{4}-{5}".format(submission.javagrade.tests_passed,
+                    subject = "{2}, {3}--Attempt: {6}--{0}/{1}--{4}-{5}".format(submission.javagrade.tests_passed,
                                                                        submission.javagrade.total_tests,
                                                                        submission.last_name, 
                                                                        submission.first_name, 
                                                                        c.course_num, 
                                                                        assn.name, 
-                                                                       submission.submission_time.ctime())
+                                                                       submission.submission_number)
                      # if the grade_log is less than 200K, send it in the body
                     if len(grader_output) < 205000:
                         email = EmailMessage(subject,

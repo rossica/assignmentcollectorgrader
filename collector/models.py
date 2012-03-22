@@ -292,3 +292,16 @@ def delete_submission_files(sender, **kwargs):
         print "Windows Error in delete_submission_files: ", winerror, strerror
     except OSError as ose:                              # pragma: no cover
         print "OSError in delete_submission_files: ", ose
+        
+@receiver(pre_delete, sender=JavaAssignment)
+def delete_assignment_file(sender, **kwargs):
+    try:
+        if kwargs['instance'].test_file:
+            kwargs['instance'].test_file.delete()
+
+    except ObjectDoesNotExist as dne:                   # pragma: no cover
+        print "DNE Error in delete_assignment_file: ", dne
+    except WindowsError as (winerror, strerror):        # pragma: no cover
+        print "Windows Error in delete_assignment_file: ", winerror, strerror
+    except OSError as ose:                              # pragma: no cover
+        print "OSError in delete_assignment_file: ", ose

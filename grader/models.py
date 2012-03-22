@@ -19,6 +19,7 @@ from django import forms
 from django.core.files import File
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
+from django.core.exceptions import ObjectDoesNotExist
 
 from settings import MEDIA_ROOT, JUNIT_ROOT
 from collector.models import JavaSubmission, GenericSubmission
