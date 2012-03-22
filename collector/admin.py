@@ -153,7 +153,7 @@ class AssignmentAdmin(admin.ModelAdmin):
                     warning = "Submissions after the due date are allowed."
                 # Add the assignment, the latest unique submissions, and warnings (if any) to the output
                 grades.append([assn, submissions, warning])
-        return render_to_response('collector/grades.html', {'grades':grades,})
+        return render_to_response('grades.html', {'grades':grades,})
     display_grades.short_description = "Generate gradesheet"
     
 

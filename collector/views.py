@@ -32,23 +32,22 @@ import os, os.path, re, shutil, subprocess, tempfile, datetime, time, zipfile
 def course_index(request, **kwargs):
     if kwargs.has_key('year') and kwargs.has_key('term'):
         list = get_list_or_404(Course, year=kwargs['year'], term=kwargs['term'])
-        return render_to_response('collector/index.html', {'course_list':list, 'specific_term_course_index':(kwargs['year'],kwargs['term']), })
+        return render_to_response('index.html', {'course_list':list, 'specific_term_course_index':(kwargs['year'],kwargs['term']), })
     elif kwargs.has_key('year'):
         list = get_list_or_404(Course, year=kwargs['year'])
-        return render_to_response('collector/index.html', {'course_list':list, 'specific_term_course_index':(kwargs['year'],None), })
+        return render_to_response('index.html', {'course_list':list, 'specific_term_course_index':(kwargs['year'],None), })
     else:
         list = Course.objects.all().order_by('year', 'term')
-    return render_to_response('collector/index.html', {'course_list':list, 'course_index':'a',})
+    return render_to_response('index.html', {'course_list':list, 'course_index':'a',})
 
 def view_about(request):
-    return render_to_response('collector/about.html', {'major_version':MAJOR_VERSION, 'minor_version':MINOR_VERSION, })
+    return render_to_response('about.html', {'major_version':MAJOR_VERSION, 'minor_version':MINOR_VERSION, })
 
 def view_course(request, year, term, course_id):
     course = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
-    # TODO: Only show assignments that have started before now() -- FIXED: can't submit to assignments that start before now
     assns = course.javaassignment_set.order_by('due_date').filter(due_date__gte=datetime.datetime.now())
     late = course.javaassignment_set.order_by('due_date').filter(due_date__lt=datetime.datetime.now())
-    return render_to_response('collector/course.html', {'assignments':assns, 'late':late, 'course':course})
+    return render_to_response('course.html', {'assignments':assns, 'late':late, 'course':course})
     
 def view_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
@@ -64,7 +63,7 @@ def view_assignment(request, year, term, course_id, assn_name):
             form = JavaSubmissionForm()
         else:
             form = JavaSubmissionFormP()
-    return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form,})
+    return render_to_response('assignment.html', {'assignment':assn, 'form':form,})
 
 def view_submission(request, year, term, course_id, assn_name, sub_id):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
@@ -91,7 +90,7 @@ def view_submission(request, year, term, course_id, assn_name, sub_id):
     else:
         grader_output = "No grade results to display."
     
-    return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':sub, 'grade':grade})
+    return render_to_response('assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':sub, 'grade':grade})
 
 def submit_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
@@ -109,13 +108,13 @@ def submit_assignment(request, year, term, course_id, assn_name):
         # If the user is trying to upload a submission before the assignment is available, inform them
         if datetime.datetime.now() < assn.start_date:
             error_msg = 'Submission has not opened for this assignment. Please wait until the assignment is available to submit your code.'
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
+            return render_to_response('assignment.html', {'assignment':assn, 'grader_output':error_msg})
         
         #if now is later than assn.due_date:
         #    return and inform the user that submission is closed
         if (datetime.datetime.now() > assn.due_date) and not assn.allow_late:
             error_msg = 'It is past the due date and late assignments are not accepted. Sorry. :('
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
+            return render_to_response('assignment.html', {'assignment':assn, 'grader_output':error_msg})
         # else if the assignment is late, but late submissions are allowed
         elif (datetime.datetime.now() > assn.due_date) and assn.allow_late:
             late = "You are turning in this assignment past the due date. But it will be accepted anyway. :)\n\n"
@@ -132,7 +131,7 @@ def submit_assignment(request, year, term, course_id, assn_name):
             # Determine if the maximum number of submissions has been reached.
             if count >= assn.max_submissions > 0:
                 error_msg = "I'm sorry, but you've reached the maximum number of attempts."
-                return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':error_msg})
+                return render_to_response('assignment.html', {'assignment':assn, 'grader_output':error_msg})
             
             # Save the form to disk/database
             submission = form.save()
@@ -150,11 +149,13 @@ def submit_assignment(request, year, term, course_id, assn_name):
                 grader_output += grader.grade(assn, submission)
                 # If the user gave an email address, send them the grade log
                 if submission.email:
-                    subject = "({0}, {1}) {2}-{3} GRADE RESULTS   ----    Submitted {4}".format(submission.last_name, 
-                                                                                               submission.first_name, 
-                                                                                               c.course_num, 
-                                                                                               assn.name, 
-                                                                                               submission.submission_time.ctime())
+                    subject = "{2}, {3}--{6}--{0}/{1}--{4}-{5}".format(submission.javagrade.tests_passed,
+                                                                       submission.javagrade.total_tests,
+                                                                       submission.last_name, 
+                                                                       submission.first_name, 
+                                                                       c.course_num, 
+                                                                       assn.name, 
+                                                                       submission.submission_time.ctime())
                      # if the grade_log is less than 200K, send it in the body
                     if len(grader_output) < 205000:
                         email = EmailMessage(subject,
@@ -172,14 +173,10 @@ def submit_assignment(request, year, term, course_id, assn_name):
                         email.attach_file(submission.javagrade.grade_log.path)
                     email.send(fail_silently=True)
             
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':submission, 'grade':grader})
+            return render_to_response('assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':submission, 'grade':grader})
         
         else: # Invalid form
-            return render_to_response('collector/assignment.html', {'assignment':assn, 'form':form}) 
+            return render_to_response('assignment.html', {'assignment':assn, 'form':form}) 
     
     else: # HTTP GET instead of POST
         return HttpResponseRedirect(reverse('collector.views.view_assignment', args=(c.year, c.term, c.course_num, assn.name,)))
-        #if datetime.datetime.now() < assn.start_date:
-        #    return render_to_response('collector/assignment.html', {'assignment':assn, })
-        #else:
-        #    return render_to_response('collector/assignment.html', {'assignment':assn, 'form':SubmissionForm()})
