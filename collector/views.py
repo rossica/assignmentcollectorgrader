@@ -41,14 +41,34 @@ def course_index(request, **kwargs):
     return render_to_response('index.html', {'course_list':list, 'course_index':'a',})
 
 def view_about(request):
-    return render_to_response('about.html', {'major_version':MAJOR_VERSION, 'minor_version':MINOR_VERSION, })
+    try:
+        from pygments import highlight
+        from pygments.formatters import HtmlFormatter
+        from pygments.lexers import get_lexer_for_filename
+        from settings import PROJECT_ROOT
+    except ImportError:
+        return render_to_response('about.html', {'major_version':MAJOR_VERSION, 'minor_version':MINOR_VERSION, })
+    else:
+        styles = ""
+        sources = []
+        for root, dirs, files in os.walk(PROJECT_ROOT, ):
+            for file in files:
+                name, ext = os.path.splitext(file)
+                if ext in ['.py', '.html',] and name not in ['settings', 'manage']:
+                    lexer = get_lexer_for_filename(file)
+                    formatter = HtmlFormatter(linenos='inline',  anchorlinenos=False) # lineanchors=os.path.basename(root)+'.'+name,
+                    f = open(os.path.join(root, file),'rU')
+                    sources.append( (os.path.join(os.path.basename(root), file), highlight(f.read(), lexer, formatter)) )
+                    f.close()
+        styles = HtmlFormatter().get_style_defs()
+        return render_to_response('about.html', {'major_version':MAJOR_VERSION, 'minor_version':MINOR_VERSION, 'styles': styles, 'sources':sources})
 
 def view_course(request, year, term, course_id):
     course = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assns = course.javaassignment_set.order_by('due_date').filter(due_date__gte=datetime.datetime.now())
     late = course.javaassignment_set.order_by('due_date').filter(due_date__lt=datetime.datetime.now())
     return render_to_response('course.html', {'assignments':assns, 'late':late, 'course':course})
-    
+
 def view_assignment(request, year, term, course_id, assn_name):
     c = get_object_or_404(Course, year=year, term=term.lower(), course_num=course_id)
     assn = get_object_or_404(JavaAssignment, course=c.pk, name=assn_name) # where the course and assignment name uniquely id the assn

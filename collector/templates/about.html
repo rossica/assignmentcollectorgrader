@@ -19,23 +19,37 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
                       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
+    {% if styles %}
+        <style type="text/css">
+            {{styles|safe}}
+        </style>
+    {% endif %}
 
     <head>
-    	<title>About Assignment Collector&#47;Grader</title>
+        <title>About Assignment Collector&#47;Grader</title>
     </head>
     <body>
-    	<center>
-    		<h2>About Assignment Collector&#47;Grader</h2>
-    		Assignment Collector&#47;Grader is written by Anthony Rossi &lt;<a href="mailto:anro@acm.org">anro@acm.org</a>&gt;.<br>
-    		Originally for the computer science department at Western Oregon University, ACG is now available for all to use.<br>
-    		As per the conditions of the Affero GNU Public License, the source is available at the project page:<br>
-    		<a href="http://sourceforge.net/projects/asgnmtgrader" target="_blank">http://sourceforge.net/projects/asgnmtgrader</a>
-    		<br>
-    		<br>
-    		<b>Version&#58;</b> {{major_version}}.{{minor_version}}<br>
-    		<br>
-    		&copy; 2010, 2011, 2012 Anthony Rossi
-    	</center>
+        <center>
+            <h2>About Assignment Collector&#47;Grader</h2>
+            Assignment Collector&#47;Grader is written by Anthony Rossi &lt;<a href="mailto:anro@acm.org">anro@acm.org</a>&gt;.<br>
+            Originally for the computer science department at Western Oregon University, ACG is now available for all to use.<br>
+            As per the conditions of the Affero GNU Public License, the source is available at the project page:<br>
+            <a href="http://sourceforge.net/projects/asgnmtgrader" target="_blank">http://sourceforge.net/projects/asgnmtgrader</a>
+            <br>
+            <br>
+            <b>Version&#58;</b> {{major_version}}.{{minor_version}}<br>
+            <br>
+            &copy; 2010, 2011, 2012 Anthony Rossi<br>
+            <br>
+            <br>
+            </center>
+            {% if sources %}
+                {% for file, source in sources %}
+                <hr>
+                <p>{{file}}</p><br>
+                {{source|safe}}<br>
+                {% endfor %}
+            {% endif %}
+        
     </body>
-    
 </html>
