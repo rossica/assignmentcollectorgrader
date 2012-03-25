@@ -1,3 +1,10 @@
+Thank you for downloading Assignment Collector/Grader!
+
+Installation instructions for both developers and server administrators are in INSTALL.txt.
+
+The changelog can be found in CHANGELOG.txt.
+
+The latest version release notes:
 -------------------------------------------------------------------------------
 Version 2.0 Release - 3/24/2012
 ===============================================================================
@@ -25,16 +32,3 @@ In Summary:
 *	Generated gradesheets are a little prettier.
 *	Hooks for future implementation of plagiarism detection are in place.
 *	General bug fixes and minor improvements.
-
--------------------------------------------------------------------------------
-Version 1.1 Release - 2/26/2012
-===============================================================================
-This release features several minor bug fixes in the grader and improved input 
-validation for the Submission and Assignment forms. The main feature of this 
-release is a testing suite that covers over 95% of all code in the project.
-This is necessary for future development.
-In Summary:
-*   New Test suite that covers 95% of all code
-*   Improved input sanitation in Submission forms
-*   Improved input validation in Assignment forms
-*   General bug fixes

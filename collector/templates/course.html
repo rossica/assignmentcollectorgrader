@@ -21,25 +21,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
     <head>
-    	<title>{{course|capfirst}} Assignments</title>
+        <title>{{course|capfirst}} Assignments</title>
     </head>
     
     <body>
-    	<h2>{{course.course_num}}</h2>
-    	<p>
-    		{{course.course_title}} <br/>
-    	 	{{course.term|capfirst}} {{course.year}} <br/> 
-    	 	{{course.description|linebreaks}}<br/>
-    	</p>
-    	<h3>Assignments</h3>
-    	<hr>
+        <h2>{{course.course_num}}</h2>
+        <p>
+            {{course.course_title}} <br/>
+             {{course.term|capfirst}} {{course.year}} <br/> 
+             {{course.description|linebreaks}}<br/>
+        </p>
+        <h3>Assignments</h3>
+        <hr>
         <ul>
-        	{% for l in late %}
-        		<a href="{% url collector.views.view_assignment course.year course.term l.course.course_num l.name %}"> <li>{{l.name}}  Due:{{l.due_date}}</li></a>
-        	{% endfor %}
-        	{% if late %}
-        	<hr>
-        	{% endif %}
+            {% for l in late %}
+                <a href="{% url collector.views.view_assignment course.year course.term l.course.course_num l.name %}"> <li>{{l.name}}  Due:{{l.due_date}}</li></a>
+            {% endfor %}
+            {% if late %}
+            <hr>
+            {% endif %}
             {% for assn in assignments %}
                 <a href="{% url collector.views.view_assignment course.year course.term assn.course.course_num assn.name %}"> <li>{{assn.name}}  <b>Due:{{assn.due_date}}</li></b> </a>
             {% endfor %}

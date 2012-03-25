@@ -92,7 +92,6 @@ class GenericAssignment(models.Model):
         return "tests{0}{1}".format(self.get_absolute_url(), filename)
     
     def __unicode__(self):
-        #return "{0}: {1}".format(self.course.__unicode__(), self.name)
         return self.name
     
     course = models.ForeignKey(Course)
@@ -110,7 +109,6 @@ class GenericAssignment(models.Model):
         unique_together = ('course', 'name')
 
 class JavaAssignment(GenericAssignment):
-    # TODO: 2.0 Rename to JARAssignment
     @models.permalink
     def get_absolute_url(self):
         return ('collector.views.view_assignment', (), {
@@ -138,22 +136,16 @@ class GenericSubmission(models.Model):
     def __unicode__(self):
         return "{0} {1}: {2} #{3}".format(self.last_name, self.first_name, self.assignment.__unicode__(), self.submission_number)
     
-    #assignment = models.ForeignKey(JavaAssignment) ## TODO 2.0 must move to specific child model
-    #course = models.ForeignKey(Course) ## TODO 2.0 remove this because it is redundant
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
     email = models.EmailField("Email (optional)", blank=True)
     submission_time = models.DateTimeField(auto_now_add=True)
     submission_number = models.IntegerField(default=1)
-    # TODO: add fields to store the grade as tests passed and tests failed
-    # TODO: redo the entire grade reporting framework to use this.
-    ## Milestone: 2.0+
     
     class Meta:
         abstract = True
         
 class JavaSubmission(GenericSubmission):
-    # TODO: 2.0 Rename to JARSubmission
     @models.permalink
     def get_absolute_url(self):
         return ('collector.views.view_submission', (), {
@@ -164,8 +156,6 @@ class JavaSubmission(GenericSubmission):
                 'sub_id': self.id})
     assignment = models.ForeignKey(JavaAssignment)
     file = models.FileField(upload_to=GenericSubmission.fileurl)
-    #grade_log = models.FileField(blank=True, upload_to=GenericSubmission.fileurl)
-    #grade = models.CharField(max_length=100, blank=True)
     
 #################
 ###   Forms   ###
@@ -216,7 +206,6 @@ class JavaAssignmentForm(forms.ModelForm):
         return tf
 
 class JavaSubmissionForm(forms.ModelForm):
-    # TODO: Create a JAR-specific JAR submission form, and a generic Submission form
     
     def clean_first_name(self):
         fn = re.sub(r'[^a-z\-]', '', self.cleaned_data['first_name'].lower())
@@ -258,8 +247,13 @@ class JavaSubmissionFormP(JavaSubmissionForm):
     passkey = forms.CharField(max_length=25, required=True)
     
     def clean(self):
-        # TODO: check to make sure we have an assignment and course object to test against
-        #    raise forms.ValidationError("No JavaSubmission instance supplied to this form. Tell a programmer.")
+        # check to make sure we have an assignment and course object to test against
+        if not self.instance:
+            raise forms.ValidationError("No JavaSubmission instance supplied to this form. Tell a programmer.")
+        elif not self.instance.assignment:
+            raise forms.ValidationError("No JavaAssignment supplied to this form. Tell a programmer.")
+        elif not self.instance.assignment.course:
+            raise forms.ValidationError("No Course supplied to this form. Tell a programmer.")
         
         # If the passkey field is specified
         if 'passkey' in self.cleaned_data:      # pragma: no branch

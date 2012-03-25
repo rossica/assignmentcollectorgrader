@@ -154,11 +154,19 @@ favorite text editor.
     the database settings under the DATABASES list. First, select the 
     database engine you are using, then the name of the database, and the
     other related settings relevant to your database configuration.
+
+    d)    By default, the SMTP configuration will print emails to console.
+    If you have an SMTP server set up and want to send submissions emails,
+    uncomment the EMAIL_BACKEND for smtp, and comment the one for console.
+    Then uncomment and set the EMAIL_HOST to the IP address of your mail 
+    server, and configure the EMAIL_HOST_USER and EMAIL_HOST_PASSWORD. If
+    your SMTP server uses a non-default port or TLS, uncomment and set the
+    EMAIL_PORT and EMAIL_USE_TLS variables.
     
-    d)    Update the MEDIA_ROOT and MEDIA_URL settings if you require a
+    e)    Update the MEDIA_ROOT and MEDIA_URL settings if you require a
     different configuration for those.
     
-    e)    *IMPORTANT* Change the SECRET_KEY value to a new random value.
+    f)    *IMPORTANT* Change the SECRET_KEY value to a new random value.
     It is very important that you DO NOT use the default value.
     
 With the settings updated to the values specific to your installation,

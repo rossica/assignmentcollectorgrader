@@ -222,9 +222,12 @@ class JavaGrade(GenericGrade):
             else:
                 ## save the return value
                 self.junit_return = java_proc.returncode
-       # otherwise, set the error
+        # otherwise, set the error
         else:
             self.junit_return = javac
+            
+        # close the temporary log file handle now that we're done grading
+        os.close(output_handle)
 
         # Save the grade log to the JavaGrade
         log_file = File(open(output_path, 'rU'))
@@ -243,6 +246,8 @@ class JavaGrade(GenericGrade):
                            "==================================================================================\n"])
             log_file.seek(-100000, os.SEEK_END)
             output.extend(log_file.readlines(100000))
+        # Close the log file now that we're done using it.
+        log_file.close()
             
         ## Extract the grade information from the output only if the watchdog timer was not hit
         if self.error != 3:
@@ -250,9 +255,6 @@ class JavaGrade(GenericGrade):
         
         ## Save the grades  
         self.save()
-        ## close open files
-        log_file.close()
-        os.close(output_handle)
         ## delete the temporary directory
         shutil.rmtree(temp_dir)
         ## return the output

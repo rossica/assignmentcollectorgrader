@@ -177,20 +177,27 @@ def submit_assignment(request, year, term, course_id, assn_name):
                                                                        assn.name, 
                                                                        submission.submission_number)
                      # if the grade_log is less than 200K, send it in the body
-                    if len(grader_output) < 205000:
+                    if submission.javagrade.grade_log.size < 205000:
                         email = EmailMessage(subject,
                                               grader_output,
                                               c.email,
                                               [submission.email, ],
                                               )
-                    # Otherwise, send it as an attachment
-                    else:
+                    # If it's larger than 200K but less than ~9MB, attach it
+                    elif 205000 < submission.javagrade.grade_log.size < 9000000:
                         email = EmailMessage(subject,
                                               "See attached file for grade results",
                                               c.email,
                                               [submission.email, ],
                                               )
                         email.attach_file(submission.javagrade.grade_log.path)
+                    # If the grade log is larger than 9MB, use the reduced output
+                    else:
+                        email = EmailMessage(subject,
+                                              grader_output,
+                                              c.email,
+                                              [submission.email, ],
+                                              )
                     email.send(fail_silently=True)
             
             return render_to_response('assignment.html', {'assignment':assn, 'grader_output':grader_output, 'submission':submission, 'grade':grader})
